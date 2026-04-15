@@ -1,0 +1,488 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>BDC Super Analysis — Hendrick Honda</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;700&family=IBM+Plex+Sans:wght@300;400;600;700;800&display=swap');
+:root{--bg:#06080F;--bg2:#0B1120;--bg3:#0F1728;--bdr:#1E293B;--bdr2:#2A3A50;--text:#E2E8F0;--sub:#64748B;--blue:#00558C;--blue2:#0070B8;--green:#22C55E;--amber:#F59E0B;--purple:#A855F7;}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:'IBM Plex Sans',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;}
+.hdr{background:linear-gradient(135deg,#00355A,var(--blue));padding:12px 20px;display:flex;align-items:center;gap:12px;border-bottom:1px solid rgba(255,255,255,.1);position:sticky;top:0;z-index:100;}
+.hdr-logo{width:32px;height:32px;border-radius:6px;background:#fff;display:flex;align-items:center;justify-content:center;font-weight:900;color:var(--blue);font-size:14px;flex-shrink:0;}
+.hdr-title{font-size:15px;font-weight:800;color:#fff;}
+.hdr-sub{font-size:10px;color:rgba(255,255,255,.55);letter-spacing:1px;text-transform:uppercase;margin-top:1px;}
+.hdr-badge{margin-left:auto;background:rgba(255,255,255,.1);color:rgba(255,255,255,.7);padding:4px 10px;border-radius:20px;font-size:9px;font-weight:700;letter-spacing:1px;text-transform:uppercase;border:1px solid rgba(255,255,255,.15);}
+#screen-input{max-width:640px;margin:0 auto;padding:36px 24px;}
+.ih{text-align:center;margin-bottom:28px;}
+.ih h1{font-size:26px;font-weight:800;background:linear-gradient(135deg,#fff,#94A3B8);-webkit-background-clip:text;-webkit-text-fill-color:transparent;margin-bottom:4px;}
+.ih p{font-size:12px;color:var(--sub);}
+.g2{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px;}
+.fu{margin-bottom:10px;}
+.field label{display:block;font-size:10px;font-weight:700;color:var(--sub);text-transform:uppercase;letter-spacing:.8px;margin-bottom:4px;}
+.field input,.field select,.field textarea{width:100%;background:var(--bg2);border:1px solid var(--bdr2);border-radius:7px;padding:9px 11px;color:var(--text);font-family:inherit;font-size:13px;outline:none;transition:border-color .15s;}
+.field input:focus,.field select:focus{border-color:var(--blue2);}
+.field textarea{resize:vertical;min-height:60px;}
+.field select option{background:#0B1120;}
+.run-btn{width:100%;padding:14px;border:none;border-radius:9px;background:linear-gradient(135deg,var(--blue),var(--blue2));color:#fff;font-family:inherit;font-size:14px;font-weight:800;cursor:pointer;margin-top:6px;transition:opacity .15s,transform .1s;}
+.run-btn:hover{opacity:.9;transform:translateY(-1px);}
+.layout{display:flex;height:calc(100vh - 57px);overflow:hidden;}
+.panel-left{width:300px;flex-shrink:0;border-right:1px solid var(--bdr);display:flex;flex-direction:column;}
+.panel-right{flex:1;overflow-y:auto;}
+.ptabs{display:flex;border-bottom:1px solid var(--bdr);flex-shrink:0;}
+.ptab{flex:1;padding:9px 6px;border:none;border-bottom:2px solid transparent;background:transparent;color:var(--sub);font-family:inherit;font-size:10px;font-weight:700;cursor:pointer;text-transform:uppercase;letter-spacing:.4px;}
+.ptab.on{color:var(--text);border-bottom-color:var(--blue2);}
+.pscroll{flex:1;overflow-y:auto;padding:12px;}
+.pscroll::-webkit-scrollbar{width:3px;}
+.pscroll::-webkit-scrollbar-thumb{background:var(--bdr2);border-radius:3px;}
+.score-block{display:flex;align-items:center;gap:10px;padding:10px;background:var(--bg3);border-radius:9px;margin-bottom:10px;border:1px solid var(--bdr);}
+.score-ring{position:relative;width:56px;height:56px;flex-shrink:0;}
+.score-ring svg{transform:rotate(-90deg);}
+.score-num{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;}
+.score-n{font-size:19px;font-weight:900;line-height:1;}
+.score-l{font-size:7px;text-transform:uppercase;letter-spacing:.4px;opacity:.6;}
+.sr-title{font-size:9px;font-weight:700;color:var(--sub);text-transform:uppercase;letter-spacing:.7px;margin-bottom:4px;}
+.sr-item{font-size:10px;color:#94A3B8;line-height:1.6;}
+.irow{padding:4px 0;border-bottom:1px solid rgba(30,41,59,.5);}
+.ilabel{font-size:8px;color:#475569;font-weight:700;text-transform:uppercase;letter-spacing:.5px;}
+.ivalue{font-size:11px;color:var(--text);line-height:1.3;margin-top:1px;}
+.mbs-badge{display:flex;align-items:center;gap:7px;padding:8px;border-radius:7px;margin-top:8px;}
+.mbs-circle{width:22px;height:22px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:900;font-size:10px;flex-shrink:0;}
+.step-card{border-radius:7px;padding:7px 9px;margin-bottom:5px;}
+.step-num{font-size:8px;font-weight:800;letter-spacing:.7px;text-transform:uppercase;margin-bottom:2px;}
+.step-body{font-size:9px;color:#94A3B8;line-height:1.5;white-space:pre-wrap;}
+.ctabs{display:flex;border-bottom:1px solid var(--bdr);position:sticky;top:0;background:#080C18;z-index:10;}
+.ctab{flex:1;padding:11px 6px;border:none;border-bottom:2px solid transparent;background:transparent;color:var(--sub);font-family:inherit;font-size:11px;font-weight:700;cursor:pointer;}
+.ctab.on{color:var(--text);border-bottom-color:var(--blue2);}
+.rinner{padding:14px 16px;}
+.sec-title{font-size:9px;font-weight:800;color:var(--sub);letter-spacing:1.1px;text-transform:uppercase;margin-bottom:10px;}
+.mopt{border-radius:9px;margin-bottom:7px;cursor:pointer;overflow:hidden;}
+.mopt-hdr{padding:9px 12px;display:flex;align-items:center;justify-content:space-between;}
+.mopt-left{display:flex;align-items:flex-start;gap:7px;}
+.opt-radio{width:17px;height:17px;border-radius:50%;border:2px solid var(--bdr2);display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:1px;}
+.opt-dot{width:9px;height:9px;border-radius:50%;}
+.opt-lbl{font-size:12px;font-weight:700;}
+.opt-tags{display:flex;gap:3px;flex-wrap:wrap;margin-top:3px;}
+.htag{font-size:7px;padding:1px 5px;border-radius:7px;font-weight:800;}
+.ttag{display:inline-block;padding:2px 7px;border-radius:9px;font-size:8px;font-weight:800;letter-spacing:.4px;}
+.mopt-body{padding:0 12px 10px;}
+.m-subject{font-size:10px;color:var(--sub);margin-bottom:5px;}
+.m-subject span{color:#CBD5E1;}
+.m-bubble{background:#060A14;border-radius:7px;padding:11px 13px;border:1px solid var(--bdr);}
+.m-bubble pre{font-family:'IBM Plex Sans',sans-serif;font-size:12px;line-height:1.65;color:#CBD5E1;white-space:pre-wrap;margin:0;}
+.copy-btn{margin-top:7px;padding:5px 14px;border-radius:5px;border:none;background:linear-gradient(135deg,var(--blue),var(--blue2));color:#fff;font-family:inherit;font-weight:800;font-size:11px;cursor:pointer;}
+.copy-btn.done{background:var(--green);}
+.fu-tabs{display:flex;background:#111827;border-radius:7px;padding:3px;margin-bottom:12px;}
+.futab{flex:1;padding:7px;border-radius:5px;border:none;background:transparent;color:var(--sub);font-family:inherit;font-size:10px;font-weight:700;cursor:pointer;}
+.futab.on{background:var(--blue);color:#fff;}
+.rep-bubble{background:#111827;border-radius:7px;padding:9px 11px;margin-bottom:10px;border-left:3px solid var(--amber);}
+.rep-lbl{font-size:8px;font-weight:700;color:var(--amber);margin-bottom:3px;text-transform:uppercase;letter-spacing:.7px;}
+.rep-txt{font-size:11px;font-style:italic;color:#CBD5E1;line-height:1.5;}
+.sub-sec{font-size:9px;font-weight:700;color:var(--sub);text-transform:uppercase;letter-spacing:.7px;margin:10px 0 5px;}
+.new-btn{display:block;margin:0 0 14px;padding:7px 14px;border-radius:6px;border:1px solid var(--bdr2);background:var(--bg3);color:var(--sub);font-family:inherit;font-size:10px;font-weight:700;cursor:pointer;text-transform:uppercase;letter-spacing:.4px;}
+.new-btn:hover{color:var(--text);}
+::-webkit-scrollbar{width:4px;}
+::-webkit-scrollbar-thumb{background:#1E293B;border-radius:4px;}
+</style>
+</head>
+<body>
+<div class="hdr">
+  <div class="hdr-logo">H</div>
+  <div><div class="hdr-title">BDC Super Analysis</div><div class="hdr-sub">Voss x Hughes x MBS — Phase 2</div></div>
+  <div class="hdr-badge">Hendrick Honda Charlotte</div>
+</div>
+<div id="screen-input">
+  <div class="ih"><h1>10-Step Super Analysis</h1><p>Enter lead data or launch from the ELeads extension — instant results, no API needed</p></div>
+  <div class="g2">
+    <div class="field"><label>Customer Name</label><input id="in-name" placeholder="First Last"></div>
+    <div class="field"><label>Phone</label><input id="in-phone" placeholder="704-555-0000"></div>
+  </div>
+  <div class="g2">
+    <div class="field"><label>Email</label><input id="in-email" placeholder="email@example.com"></div>
+    <div class="field"><label>Lead Source</label>
+      <select id="in-source">
+        <option value="">Select source...</option>
+        <option>TrueCar</option><option>Gubagoo</option><option>ClearCar</option>
+        <option>CarGurus</option><option>Cars.com</option><option>Xchange</option>
+        <option>HDS Program</option><option>Honda.com</option><option>HendrickCars.com</option>
+        <option>Dealer Inspire ePrice</option><option>Costco Auto</option><option>Other</option>
+      </select>
+    </div>
+  </div>
+  <div class="fu field"><label>Vehicle of Interest</label><input id="in-vehicle" placeholder="2026 Honda CR-V EX-L Meteorite Gray"></div>
+  <div class="g2">
+    <div class="field"><label>Trade Vehicle</label><input id="in-trade" placeholder="2021 RAV4 XLE (if any)"></div>
+    <div class="field"><label>Area Code / Location</label><input id="in-location" placeholder="704=Local / 917=NYC..."></div>
+  </div>
+  <div class="g2">
+    <div class="field"><label>Sales Status</label>
+      <select id="in-status">
+        <option>Uncontacted</option><option>Working</option><option>Customer Engaged</option>
+        <option>Hot</option><option>VIP- Working</option><option>Appointment Set</option>
+        <option>Long Term Follow Up</option><option>Non-Responsive</option>
+      </select>
+    </div>
+    <div class="field"><label>Service Visits</label><input id="in-svc" placeholder="0" type="number"></div>
+  </div>
+  <div class="g2">
+    <div class="field"><label>Sales Lifetime Value</label><input id="in-ltv" placeholder="$0.00"></div>
+    <div class="field"><label>Equity Value</label><input id="in-equity" placeholder="(if known)"></div>
+  </div>
+  <div class="fu field"><label>Sub-source / Notes</label><textarea id="in-notes" placeholder="Sub-source, customer comments, special context..."></textarea></div>
+  <button class="run-btn" onclick="runAnalysis()">Run Super Analysis</button>
+</div>
+<div id="screen-results" style="display:none">
+  <div class="layout">
+    <div class="panel-left">
+      <div class="ptabs">
+        <button class="ptab on" onclick="setLP('intel',this)">Intel</button>
+        <button class="ptab" onclick="setLP('steps',this)">10 Steps</button>
+      </div>
+      <div class="pscroll" id="lp-intel"></div>
+      <div class="pscroll" id="lp-steps" style="display:none"></div>
+    </div>
+    <div class="panel-right" id="right-panel"></div>
+  </div>
+</div>
+<script>
+var HC={'FIC':'#3B82F6','Cold Reading':'#A855F7','Suffering':'#EC4899','Double Bind':'#F59E0B','Embedded Cmd':'#22C55E','Needs/Fears':'#EF4444','Third-Party':'#06B6D4','Scarcity':'#F97316','Sensory (K)':'#8B5CF6','Accusation Audit':'#EF4444','Label':'#EC4899','Mirror':'#64748B','Calibrated Q':'#3B82F6'};
+var TC={'RECOMMENDED':'#22C55E','COMPETITIVE':'#F59E0B','LOW PRESSURE':'#3B82F6','PERSONAL TOUCH':'#8B5CF6','TRANSPLANT LEAN':'#A855F7','URGENCY':'#F97316'};
+var MBC={Yellow:'#EAB308',Blue:'#3B82F6',Green:'#22C55E',Red:'#EF4444'};
+function sc(n){return n>=70?'#22C55E':n>=40?'#F59E0B':'#EF4444';}
+var RESULT=null,LEAD=null,selT=null,selE=null,selFT=null,selFE=null,fuMode='replied',rTab='text';
+
+function detectTransplant(phone){
+  var local=['704','980','336','828','910','803'];
+  var area=(phone||'').replace(/\D/g,'').slice(0,3);
+  if(!area||local.indexOf(area)>=0)return null;
+  var map={'917':'NYC','646':'NYC','212':'NYC','404':'Atlanta','678':'Atlanta','770':'Atlanta','214':'Dallas','469':'Dallas','972':'Dallas','312':'Chicago','713':'Houston','832':'Houston','305':'Miami','617':'Boston','415':'SF Bay','202':'DC','301':'DC/MD','703':'DC/VA'};
+  return map[area]?area+'='+map[area]:area+'=Out of Market';
+}
+
+function detectMBS(src,vehicle,trade,notes,svc){
+  var s=(src+vehicle+notes).toLowerCase();
+  var sv=parseInt(svc)||0;
+  if(s.indexOf('xchange')>=0||s.indexOf('campaign')>=0||sv>20)return{profile:'Relator',color:'Green',letter:'G',reason:'Service-to-sales / loyal customer — relationship-driven buyer'};
+  if(s.indexOf('clearcar')>=0||(trade&&trade.length>3))return{profile:'Analyst',color:'Yellow',letter:'Y',reason:'Trade research + specific vehicle selection — analytical buyer'};
+  if(s.indexOf('gubagoo')>=0||s.indexOf('payment')>=0)return{profile:'Guardian',color:'Blue',letter:'B',reason:'Payment calculator dropout — security-focused, risk-averse buyer'};
+  if(s.indexOf('truecar')>=0||s.indexOf('sport touring')>=0||s.indexOf('ex-l')>=0)return{profile:'Analyst',color:'Yellow',letter:'Y',reason:'Research-driven source + specific trim — analytical buyer'};
+  if(s.indexOf('hds')>=0||s.indexOf('honda direct')>=0)return{profile:'Relator',color:'Green',letter:'G',reason:'Honda-loyal repeat channel — relationship-driven buyer'};
+  return{profile:'Analyst',color:'Yellow',letter:'Y',reason:'Internet lead default — likely researched before submitting'};
+}
+
+function calcScore(L){
+  var s=0,r=[];
+  if(parseFloat((L.ltv||'').replace(/[$,]/g,''))>0){s+=25;r.push('Repeat customer');}
+  var sv=parseInt(L.svc)||0;
+  if(sv>=100){s+=20;r.push(sv+' service visits');}
+  else if(sv>=50){s+=16;r.push(sv+' service visits');}
+  else if(sv>=20){s+=12;r.push(sv+' service visits');}
+  else if(sv>=5){s+=8;r.push(sv+' service visits');}
+  else if(sv>0){s+=4;r.push(sv+' service visits');}
+  if(L.trade&&L.trade.length>3){s+=15;r.push('Trade vehicle present');}
+  var src=(L.source||'').toLowerCase();
+  if(src.indexOf('xchange')>=0||src.indexOf('hds')>=0){s+=15;r.push('Loyalty source');}
+  else if(src.indexOf('truecar')>=0){s+=7;r.push('TrueCar lead');}
+  else if(src.length>0){s+=6;r.push('Internet source');}
+  var st=(L.status||'').toLowerCase();
+  if(st.indexOf('working')>=0||st.indexOf('engaged')>=0){s+=15;r.push('Active status');}
+  else if(st.indexOf('appointment')>=0){s+=12;r.push('Appointment set');}
+  else if(st.indexOf('hot')>=0){s+=10;r.push('Hot status');}
+  else if(st.indexOf('uncontacted')>=0){s+=5;}
+  return{score:Math.min(s,100),reasons:r};
+}
+
+function getT(L,mbs,trans){
+  var src=(L.source||'').toLowerCase();
+  var hasTrade=L.trade&&L.trade.length>3;
+  var tLine=trans?' I noticed your area code is from '+trans.split('=')[1]+' — are you local to Charlotte or still there?':'';
+  var tBlock=trans?'\n\nI noticed your area code is from '+trans.split('=')[1]+' — are you local to Charlotte or still there?':'';
+  var fn=L.firstName;
+
+  if(src.indexOf('truecar')>=0)return{
+    signals:['TrueCar — first slot opportunity','Price-aware, research-driven buyer','Specific vehicle selected on TrueCar',hasTrade?'Trade listed: '+L.trade:'No trade listed',trans?'Transplant: '+trans:'Local Charlotte area','Status: '+L.status],
+    suffering:'Wants certainty — came with the research, just needs confirmation the price is real and the dealer won\'t play games.',
+    fic:{f:'TrueCar price is locked and the exact vehicle is here',i:'No negotiation, no surprises — exactly what they came for',c:'This week or next?'},
+    s8:{ec:"'When you come in, I'll have it parked up front'",cr:"'You clearly did your homework'",tp:"'TrueCar customers typically have a smooth, fast visit here'",sc:'TrueCar pricing valid 7 days — timing matters'},
+    s9:'This week or next?',
+    s10:['TrueCar price acknowledged','Analyst tone used','Validation given','No-games fear preempted','FIC structure','Embedded command','Double bind close',trans?'Transplant flagged':'Local confirmed','Vehicle confirmed','Signed'],
+    texts:[
+      {label:'Confirm + Book',tag:'RECOMMENDED',hughes:['FIC','Cold Reading','Embedded Cmd','Double Bind'],msg:'Hi '+fn+' \u2014 the '+L.vehicle+' is right here, exact match to your TrueCar build. Price is locked, no negotiation needed. You clearly know what you want.'+tLine+' When you come in, I\'ll have it pulled up front. This week or next? \u2013Bryan, Hendrick Honda'},
+      {label:'Short + Personal',tag:'PERSONAL TOUCH',hughes:['Embedded Cmd','Double Bind'],msg:'Hi '+fn+' \u2014 your '+L.vehicle+' is here and TrueCar price is confirmed. What day works? \u2013Bryan, Hendrick Honda'},
+      {label:'Scarcity + Book',tag:'URGENCY',hughes:['FIC','Scarcity','Double Bind'],msg:'Hi '+fn+' \u2014 the '+L.vehicle+' you selected is here, TrueCar pricing locked. It\'s had interest this week. When you come in it\'ll be parked up front. Tomorrow or this weekend? \u2013Bryan, Hendrick Honda'},
+    ],
+    emails:[
+      {label:'Full Analyst Welcome',tag:'RECOMMENDED',hughes:['FIC','Cold Reading','Embedded Cmd','Needs/Fears','Double Bind'],subject:'Your '+L.vehicle+' Is Here \u2014 '+fn,msg:'Hi '+fn+',\n\nThe '+L.vehicle+' is right here at Hendrick Honda Charlotte \u2014 exact match to your TrueCar build. You clearly know what you want, which makes this easy.\n\nAs a TrueCar Certified Dealer, the price you saw is honored \u2014 no negotiation, no surprises, no pressure.'+tBlock+'\n\nWhen you come in, I\'ll have it pulled up front and ready to go.\n\nThis week or next?\n\nBryan\nHendrick Honda Charlotte\n980-327-1238'},
+      {label:'Straight to Appointment',tag:'PERSONAL TOUCH',hughes:['Cold Reading','Embedded Cmd'],subject:L.vehicle+' \u2014 Ready for You, '+fn,msg:'Hi '+fn+',\n\nYour '+L.vehicle+' is here. TrueCar price is locked. You know what you want and we have it.\n\nWhen you come in, I\'ll have it parked up front with the keys.\n\nWhat day works best?\n\nBryan\nHendrick Honda Charlotte\n980-327-1238'},
+    ],
+    followups:{
+      repliedScenario:'Thanks! Can I come in this Saturday?',
+      repliedTexts:[{label:'Confirm Saturday',tag:'RECOMMENDED',hughes:['Embedded Cmd','Double Bind'],msg:'Saturday works great \u2014 I\'ll have the '+L.vehicle+' parked up front and ready. Morning or afternoon? \u2013Bryan'}],
+      repliedEmails:[{label:'Saturday Confirmation',tag:'RECOMMENDED',hughes:['Embedded Cmd','Double Bind'],subject:'Saturday Confirmed \u2014 '+fn,msg:'Hi '+fn+',\n\nSaturday works great! I\'ll have the '+L.vehicle+' pulled up front and ready to go.\n\nMorning or afternoon?\n\nBryan\nHendrick Honda Charlotte\n980-327-1238'}],
+      noReplyDay:'Day 3',
+      noReplyTexts:[{label:'Soft Check-In',tag:'RECOMMENDED',hughes:['Scarcity','Embedded Cmd'],msg:'Hi '+fn+' \u2014 the '+L.vehicle+' you selected is still here, TrueCar price still locked. It\'s had interest this week. Want to lock in a time? \u2013Bryan, Hendrick Honda'}],
+      noReplyEmails:[{label:'Gentle Follow-Up',tag:'RECOMMENDED',hughes:['FIC','Scarcity'],subject:L.vehicle+' Still Available \u2014 '+fn,msg:'Hi '+fn+',\n\nThe '+L.vehicle+' you selected on TrueCar is still available \u2014 but it\'s had interest this week.\n\nYour pricing is locked. I\'d hate for timing to be the reason.\n\nBryan\nHendrick Honda Charlotte\n980-327-1238'}],
+    }
+  };
+
+  if(src.indexOf('gubagoo')>=0||src.indexOf('vr')>=0)return{
+    signals:['Gubagoo VR \u2014 payment calculator dropout','Online calculator showed inflated rate','Guardian buyer \u2014 payment is the core blocker',trans?'Transplant: '+trans:'Local Charlotte area','Vehicle: '+L.vehicle,'Status: '+L.status],
+    suffering:'Payment shock. Saw a number they couldn\'t stomach and stepped away. The quiet anxiety: wanting the car, not knowing if they can actually afford it.',
+    fic:{f:'The calculator doesn\'t reflect real lender rates',i:'Real rates are typically much better than the generic calculation',c:'What payment range feels comfortable?'},
+    s8:{ec:"'When I run real numbers'",cr:"'That calculator almost always overstates it'",tp:"'A customer last week saw 3% lower than the calculator showed'",sc:'Stock is here now \u2014 rates won\'t improve by waiting'},
+    s9:'Call or text \u2014 which is easier?',
+    s10:['Payment concern addressed first','Guardian tone used','Security need met','Fear of judgment preempted','FIC structure','Embedded command','Double bind close',trans?'Transplant flagged':'Local confirmed','Stock confirmed','Signed'],
+    texts:[
+      {label:'Label + Real Rates',tag:'RECOMMENDED',hughes:['FIC','Suffering','Embedded Cmd','Double Bind'],msg:'Hi '+fn+' \u2014 I saw you checking out the '+L.vehicle+'. The online calculator runs a generic rate that\'s almost always worse than what we can do. Real lender rates are typically much better.'+tLine+' What payment range feels comfortable? \u2013Bryan, Hendrick Honda'},
+      {label:'Privacy-First Guardian',tag:'LOW PRESSURE',hughes:['Needs/Fears','Embedded Cmd'],msg:'Hi '+fn+' \u2014 no credit pull needed for me to get you an accurate number on the '+L.vehicle+'. When I run real lender rates, they\'re typically significantly better than the calculator. What payment range works for you? \u2013Bryan, Hendrick Honda'},
+      {label:'Local + Quick',tag:'PERSONAL TOUCH',hughes:['FIC','Embedded Cmd','Double Bind'],msg:'Hi '+fn+' \u2014 the '+L.vehicle+' is right here and the real payment options look a lot different than the calculator showed. Takes about 20 minutes in person. This week or next? \u2013Bryan'},
+    ],
+    emails:[
+      {label:'Full Guardian Stack',tag:'RECOMMENDED',hughes:['FIC','Suffering','Third-Party','Embedded Cmd','Double Bind'],subject:L.vehicle+' \u2014 Real Numbers vs. Calculator, '+fn,msg:'Hi '+fn+',\n\nI saw you were working through the payment tool on the '+L.vehicle+' and stepped away \u2014 completely understandable. The calculator runs a generic rate that\'s almost always worse than what we can actually do.\n\nA customer last week saw the same thing \u2014 their actual rate came in 3% lower, dropping the payment by about $70/month. We work with over a dozen lenders.'+tBlock+'\n\nWhat payment range would feel comfortable? When I run real numbers, I think you\'ll see a very different picture.\n\nCall or text \u2014 which is easier?\n\nBryan\nHendrick Honda Charlotte\n980-327-1238'},
+      {label:'Short + Safe',tag:'LOW PRESSURE',hughes:['Needs/Fears','Suffering','Embedded Cmd'],subject:'Your '+L.vehicle+' Inquiry \u2014 '+fn,msg:'Hi '+fn+',\n\nI saw the payment tool showed a number that probably didn\'t feel right. That\'s the tool, not your situation.\n\nNo one sees your data but me. No credit pull needed for an accurate picture. When I run real numbers with our lender network, they\'re typically significantly better.\n\nTell me what payment range feels right and I\'ll handle the rest.\n\nBryan\nHendrick Honda Charlotte\n980-327-1238'},
+    ],
+    followups:{
+      repliedScenario:'Yeah I\'m local. What rates can you actually get?',
+      repliedTexts:[{label:'Rate Range + Book',tag:'RECOMMENDED',hughes:['Embedded Cmd','Double Bind'],msg:'Our lenders typically come in 2-3% below what that calculator showed \u2014 could be $50-70/mo difference. Best way to lock it in is a quick 20-min visit. This week or next? \u2013Bryan'}],
+      repliedEmails:[{label:'Rate Context + Appointment',tag:'RECOMMENDED',hughes:['FIC','Embedded Cmd','Double Bind'],subject:'Real Rates on the '+L.vehicle+' \u2014 '+fn,msg:'Hi '+fn+',\n\nBuyers in similar situations typically see rates 2-3% lower than the calculator. On this vehicle that\'s $50-70/month difference.\n\nBest way to lock it in is a quick visit \u2014 takes about 20 minutes.\n\nThis week or next?\n\nBryan\nHendrick Honda Charlotte\n980-327-1238'}],
+      noReplyDay:'Day 2',
+      noReplyTexts:[{label:'Value Reminder',tag:'RECOMMENDED',hughes:['FIC','Embedded Cmd'],msg:'Hi '+fn+' \u2014 the '+L.vehicle+' is still here. Real payment options are much better than the calculator showed. Want me to send a quick breakdown? \u2013Bryan, Hendrick Honda'}],
+      noReplyEmails:[{label:'Vehicle + Value',tag:'RECOMMENDED',hughes:['FIC','Double Bind'],subject:'Still Available \u2014 '+L.vehicle+', '+fn,msg:'Hi '+fn+',\n\nFollowing up \u2014 the '+L.vehicle+' is still available and the real payment options look very different from the calculator.\n\nWould a quick breakdown over text be helpful, or would you rather come see it in person?\n\nBryan\nHendrick Honda Charlotte\n980-327-1238'}],
+    }
+  };
+
+  if(src.indexOf('clearcar')>=0||hasTrade)return{
+    signals:['ClearCar / trade campaign \u2014 clicked trade value link','Trade research = analytical, prepared buyer','Trade: '+(L.trade||'listed'),trans?'Transplant: '+trans:'Local Charlotte area','Vehicle of interest: '+L.vehicle,'Status: '+L.status],
+    suffering:'Wants to make the smart move \u2014 the quiet uncertainty is whether the trade value holds up and whether the gap to the new vehicle is manageable.',
+    fic:{f:'Trade value is strong right now \u2014 specific range based on their vehicle',i:'Gap to the new vehicle is manageable with trade applied',c:'Payment range or maximize trade value?'},
+    s8:{ec:"'When we appraise the trade in person'",cr:"'You came prepared with the research \u2014 that tells me you\'re making a calculated move'",tp:"'A customer recently made a similar trade \u2014 was surprised how manageable the gap was'",sc:'Trade values are strong right now \u2014 current estimate is solid'},
+    s9:'Payment range or maximize trade value \u2014 which matters more?',
+    s10:['Trade value addressed first','Analyst tone','Competence validated','Gap fear preempted','FIC structure','Embedded command','Double bind close',trans?'Transplant flagged':'Local confirmed','Trade details noted','Signed'],
+    texts:[
+      {label:'Trade Value + Ask',tag:'RECOMMENDED',hughes:['FIC','Cold Reading','Embedded Cmd','Double Bind'],msg:'Hi '+fn+' \u2014 your '+(L.trade.split(' ').slice(0,3).join(' ')||'trade vehicle')+' is looking strong in trade value right now. You came prepared.'+tLine+' When we put the numbers together with your trade, I think you\'ll like where it lands. Payment range or maximizing trade \u2014 which matters more? \u2013Bryan, Hendrick Honda'},
+      {label:'Lean Local + Short',tag:'TRANSPLANT LEAN',hughes:['FIC','Embedded Cmd'],msg:'Hi '+fn+' \u2014 your trade is looking at a strong number right now. The '+L.vehicle+' is here. When you\'re ready, I\'ll have the trade appraisal and new car numbers waiting. This week or next? \u2013Bryan'},
+      {label:'Trade Only',tag:'LOW PRESSURE',hughes:['FIC','Double Bind'],msg:'Hi '+fn+' \u2014 your '+(L.trade.split(' ').slice(0,3).join(' ')||'vehicle')+' is looking strong on trade value right now. If you\'re thinking about the '+L.vehicle+', I can show you how the numbers work. Quick call or text? \u2013Bryan, Hendrick Honda'},
+    ],
+    emails:[
+      {label:'Full Trade Analysis',tag:'RECOMMENDED',hughes:['FIC','Suffering','Cold Reading','Third-Party','Embedded Cmd','Double Bind'],subject:'Your Trade Value + '+L.vehicle+' \u2014 '+fn,msg:'Hi '+fn+',\n\nYou came prepared \u2014 the trade research tells me you\'re making a calculated move, not an impulse one.\n\nYour '+(L.trade||'trade vehicle')+' is in strong position right now for trade value. When we appraise in person, that number gets applied directly to the '+L.vehicle+'.\n\nA customer recently made a similar trade and was surprised at how manageable the gap was with trade applied.'+tBlock+'\n\nWhat matters most \u2014 keeping the payment in a range, or maximizing your trade value?\n\nBryan\nHendrick Honda Charlotte\n980-327-1238'},
+      {label:'Numbers Forward',tag:'COMPETITIVE',hughes:['FIC','Embedded Cmd','Double Bind'],subject:'Trade Value + '+L.vehicle+' \u2014 The Numbers Work, '+fn,msg:'Hi '+fn+',\n\nYour '+(L.trade||'trade vehicle')+' is in strong shape for trade value right now.\n\nWith trade applied to the '+L.vehicle+', the gap is more manageable than most people expect. I can have real numbers ready when you come in \u2014 takes about 20 minutes.\n\nPayment breakdown first, or start with the trade appraisal?\n\nBryan\nHendrick Honda Charlotte\n980-327-1238'},
+    ],
+    followups:{
+      repliedScenario:'What would the payment look like with my trade?',
+      repliedTexts:[{label:'Numbers + Appointment',tag:'RECOMMENDED',hughes:['Embedded Cmd','Double Bind'],msg:'Great question \u2014 '+L.vehicle+' minus your trade value = manageable financing gap. I can have real figures ready in person in about 20 minutes. Tomorrow afternoon or this weekend? \u2013Bryan'}],
+      repliedEmails:[{label:'Payment Breakdown',tag:'RECOMMENDED',hughes:['FIC','Embedded Cmd','Double Bind'],subject:'Your Numbers \u2014 '+fn,msg:'Hi '+fn+',\n\nHere\'s the rough picture: '+L.vehicle+' MSRP minus your trade value = your financing gap. We finalize in person with a physical appraisal and lender approval \u2014 takes about 20 minutes.\n\nTomorrow or this weekend \u2014 which works better?\n\nBryan\nHendrick Honda Charlotte\n980-327-1238'}],
+      noReplyDay:'Day 2',
+      noReplyTexts:[{label:'Trade Reminder',tag:'RECOMMENDED',hughes:['Embedded Cmd','Scarcity'],msg:'Hi '+fn+' \u2014 trade values are strong right now. With your trade applied, the gap on the '+L.vehicle+' is very manageable. Want to lock in a time? \u2013Bryan, Hendrick Honda'}],
+      noReplyEmails:[{label:'Trade Update',tag:'RECOMMENDED',hughes:['FIC','Embedded Cmd','Double Bind'],subject:'Trade Value Update \u2014 '+fn,msg:'Hi '+fn+',\n\nFollowing up \u2014 your trade is still looking strong on value.\n\nWith trade applied to the '+L.vehicle+', the monthly payment could be very manageable. Quick appraisal or more questions first?\n\nBryan\nHendrick Honda Charlotte\n980-327-1238'}],
+    }
+  };
+
+  if(src.indexOf('xchange')>=0||src.indexOf('campaign')>=0||(parseInt(L.svc)||0)>10)return{
+    signals:['Xchange / service-to-sales campaign','Existing Hendrick Honda service customer',(L.svc||'Multiple')+' service visits \u2014 loyalty signal',hasTrade?'Current vehicle in file: '+L.trade:'Current vehicle identifiable','Status: '+L.status,'Sales LTV: '+(L.ltv||'Active service customer')],
+    suffering:'Comfortable with the familiar \u2014 the quiet resistance is fear of higher payments and disruption. Needs a reason to upgrade that\'s bigger than the inconvenience.',
+    fic:{f:'They\'re already a Hendrick Honda family member',i:'Their service history and vehicle equity make this the right time',c:'Would it help to see where your current vehicle stands?'},
+    s8:{ec:"'When we pull up your file'",cr:"'You\'ve been taking great care of that vehicle'",tp:"'Customers with your service history typically have strong equity'",sc:'Equity window won\'t always be this strong'},
+    s9:'Equity position first, or new vehicle options?',
+    s10:['Service loyalty acknowledged','Relator tone','Trust established','Fear of change preempted','FIC structure','Embedded command','Double bind close','Equity angle used','Existing relationship leveraged','Signed'],
+    texts:[
+      {label:'Loyalty + Equity + Ask',tag:'RECOMMENDED',hughes:['FIC','Cold Reading','Embedded Cmd','Needs/Fears','Double Bind'],msg:'Hi '+fn+' \u2014 you\'ve been a great customer here and it shows in how well you\'ve taken care of that vehicle. When we pull up your file, you\'re likely sitting in a better equity position than you think. The '+L.vehicle+' is a natural next step. Equity position first, or new vehicle options? \u2013Bryan, Hendrick Honda'},
+      {label:'Short + Warm',tag:'PERSONAL TOUCH',hughes:['FIC','Embedded Cmd'],msg:'Hi '+fn+' \u2014 with your service history here, now is a great time to look at the '+L.vehicle+'. Your equity position is stronger than most. Can we set 20 minutes to go over the numbers? \u2013Bryan, Hendrick Honda'},
+      {label:'Equity Angle',tag:'COMPETITIVE',hughes:['FIC','Scarcity','Double Bind'],msg:'Hi '+fn+' \u2014 your loyalty to Hendrick Honda shows, and your vehicle\'s equity position makes right now a smart time to look at the '+L.vehicle+'. This window won\'t last. Equity review first or new vehicle options? \u2013Bryan'},
+    ],
+    emails:[
+      {label:'Full Service-to-Sales',tag:'RECOMMENDED',hughes:['FIC','Suffering','Cold Reading','Embedded Cmd','Needs/Fears','Double Bind'],subject:'Great Time to Look at the '+L.vehicle+' \u2014 '+fn,msg:'Hi '+fn+',\n\nYou\'ve been a great customer here and it shows \u2014 '+(L.svc||'your')+' service visits tell us you take care of your vehicle. That matters.\n\nWhen we pull up your file, customers with your history typically have a stronger equity position than they expect. Combined with current Honda offers, the '+L.vehicle+' is a natural next move.\n\nI\'d hate for you to miss the window when the timing is this good.\n\nEquity position first, or new vehicle options?\n\nBryan\nHendrick Honda Charlotte\n980-327-1238'},
+      {label:'Relationship First',tag:'PERSONAL TOUCH',hughes:['FIC','Cold Reading','Embedded Cmd'],subject:fn+' \u2014 Your Hendrick Honda Family Update',msg:'Hi '+fn+',\n\nWe appreciate your loyalty \u2014 '+(L.svc||'your')+' service visits with us mean a lot.\n\nGiven your history and where your current vehicle likely stands, this is a great time to consider the '+L.vehicle+'. I can have a full equity review and options ready in about 20 minutes.\n\nWhen works for you?\n\nBryan\nHendrick Honda Charlotte\n980-327-1238'},
+    ],
+    followups:{
+      repliedScenario:'What would my current vehicle be worth as a trade?',
+      repliedTexts:[{label:'Equity + Book',tag:'RECOMMENDED',hughes:['Embedded Cmd','Double Bind'],msg:'With your service history your vehicle is likely in excellent shape \u2014 which means strong trade value. Quick 15-min appraisal and I\'ll have the '+L.vehicle+' ready. Tomorrow or this week? \u2013Bryan'}],
+      repliedEmails:[{label:'Appraisal Invite',tag:'RECOMMENDED',hughes:['FIC','Embedded Cmd','Double Bind'],subject:'Your Trade Appraisal \u2014 '+fn,msg:'Hi '+fn+',\n\nGiven your service history, I expect your vehicle is in great shape \u2014 which means strong trade value.\n\nCome in for a quick appraisal (15 minutes), and I\'ll have the '+L.vehicle+' ready to compare.\n\nTomorrow or later this week?\n\nBryan\nHendrick Honda Charlotte\n980-327-1238'}],
+      noReplyDay:'Day 2',
+      noReplyTexts:[{label:'Equity Nudge',tag:'RECOMMENDED',hughes:['FIC','Scarcity'],msg:'Hi '+fn+' \u2014 just following up. Your equity window on your current vehicle is strong right now and the '+L.vehicle+' is still available. Want me to pull the numbers? \u2013Bryan, Hendrick Honda'}],
+      noReplyEmails:[{label:'Equity Reminder',tag:'RECOMMENDED',hughes:['FIC','Scarcity','Double Bind'],subject:'Your Equity Window \u2014 '+fn,msg:'Hi '+fn+',\n\nFollowing up \u2014 your current vehicle\'s equity position is strong right now and that window won\'t always be open.\n\nThe '+L.vehicle+' is still available. Quick 20-minute visit this week?\n\nBryan\nHendrick Honda Charlotte\n980-327-1238'}],
+    }
+  };
+
+  if(src.indexOf('cargurus')>=0||src.indexOf('cars.com')>=0)return{
+    signals:[L.source+' \u2014 comparison shopper','Searched by specific vehicle / trim','Specific vehicle selected: '+L.vehicle,trans?'Transplant: '+trans:'Local Charlotte area',hasTrade?'Trade: '+L.trade:'No trade listed','Status: '+L.status],
+    suffering:'Availability frustration \u2014 knows the trim they want, can\'t confirm it\'s available. The quiet fear: settling for the wrong spec.',
+    fic:{f:'Locating the vehicle across 90+ Hendrick stores right now',i:'If it exists in the region we\'ll find it',c:'What drew you to this specific trim?'},
+    s8:{ec:"'When I bring it over'",cr:"'You know exactly what you want \u2014 that tells me you\'ve done the research'",tp:'Not needed here \u2014 the search behavior speaks for itself',sc:'Specific trims are limited and don\'t last long'},
+    s9:'Details on what\'s in stock today, or wait for the exact match?',
+    s10:['Specific search acknowledged','Analyst tone','Competence validated','Settling fear preempted','FIC structure','Embedded command','Double bind close',trans?'Transplant flagged':'Local confirmed','Network angle used','Signed'],
+    texts:[
+      {label:'Network + Features',tag:'RECOMMENDED',hughes:['FIC','Cold Reading','Embedded Cmd','Double Bind'],msg:'Hi '+fn+' \u2014 I\'m locating the '+L.vehicle+' across our Hendrick network now (90+ stores). You know exactly what you want. What drew you to this specific trim \u2014 features or the build? I\'ll have an update within the hour. \u2013Bryan, Hendrick Honda'},
+      {label:'Quick Locate',tag:'LOW PRESSURE',hughes:['FIC','Embedded Cmd'],msg:'Hi '+fn+' \u2014 the '+L.vehicle+' is in our system. Confirming which Hendrick location has it. When I find it I\'ll send details. Should have an answer within the hour. \u2013Bryan'},
+    ],
+    emails:[
+      {label:'Full Network + Analyst',tag:'RECOMMENDED',hughes:['FIC','Cold Reading','Scarcity','Embedded Cmd','Double Bind'],subject:L.vehicle+' \u2014 Locating Now, '+fn,msg:'Hi '+fn+',\n\nYou clearly know what you want \u2014 and that specific trim is worth tracking down.\n\nI\'m locating the '+L.vehicle+' across our Hendrick network now. With 90+ stores, if one exists nearby I\'ll find it. Specific trims like this are limited and don\'t come through often.'+tBlock+'\n\nWhat drew you to this exact vehicle \u2014 the performance, the features, or both? When I bring it over, I want to make sure it checks every box.\n\nDetails on what\'s here today, or wait for the exact match?\n\nBryan\nHendrick Honda Charlotte\n980-327-1238'},
+    ],
+    followups:{
+      repliedScenario:'Is it the only one you have in the network?',
+      repliedTexts:[{label:'Confirm + Scarcity',tag:'RECOMMENDED',hughes:['FIC','Scarcity','Embedded Cmd'],msg:'Just confirmed \u2014 found it at our Concord store. Only one in the network right now. I can have it here in 1-2 days. Want me to start the transfer, or come see it at Concord today? \u2013Bryan'}],
+      repliedEmails:[{label:'Located + Transfer',tag:'RECOMMENDED',hughes:['FIC','Scarcity','Embedded Cmd','Double Bind'],subject:'Located Your '+L.vehicle+' \u2014 '+fn,msg:'Hi '+fn+',\n\nGood news \u2014 I located the '+L.vehicle+' at our Hendrick Concord store. It\'s the only one in the network right now.\n\nI can have it transferred to South Blvd in 1-2 days, or you\'re welcome to see it at Concord today.\n\nWant me to start the transfer?\n\nBryan\nHendrick Honda Charlotte\n980-327-1238'}],
+      noReplyDay:'Day 2',
+      noReplyTexts:[{label:'Located + Urgency',tag:'RECOMMENDED',hughes:['Scarcity','Embedded Cmd'],msg:'Hi '+fn+' \u2014 found the '+L.vehicle+' at our Concord store. Only one in the network. I can have it here in 1-2 days. Want me to bring it over? \u2013Bryan'}],
+      noReplyEmails:[{label:'Location Update',tag:'RECOMMENDED',hughes:['FIC','Scarcity','Double Bind'],subject:L.vehicle+' Located \u2014 '+fn,msg:'Hi '+fn+',\n\nFollowing up \u2014 I located the '+L.vehicle+' at our Hendrick Concord store. Only one in the network.\n\nI can have it at South Blvd in 1-2 days, or you\'re welcome to see it at Concord today.\n\nWant me to start the transfer?\n\nBryan\nHendrick Honda Charlotte\n980-327-1238'}],
+    }
+  };
+
+  return{
+    signals:[(L.source||'Internet')+' lead',hasTrade?'Trade: '+L.trade:'No trade listed',trans?'Transplant: '+trans:'Local Charlotte area','Vehicle: '+L.vehicle,'Status: '+L.status,'Service visits: '+(L.svc||'0')],
+    suffering:'Looking for the right vehicle at the right time \u2014 the quiet uncertainty is whether the timing, the numbers, and the dealer are all aligned.',
+    fic:{f:'Vehicle is here and ready',i:'Hendrick Honda has the inventory and the team to make it easy',c:'What would make this a great experience?'},
+    s8:{ec:"'When you come in'",cr:"'You did your research before reaching out'",tp:"'Most customers are in and out in under an hour'",sc:hasTrade?'Trade values are strong right now':''},
+    s9:'This week or next?',
+    s10:['Vehicle confirmed','Specific tone','Need addressed','Fear preempted','FIC structure','Embedded command','Double bind close',trans?'Transplant flagged':'Local confirmed',hasTrade?'Trade angle used':'No trade noted','Signed'],
+    texts:[
+      {label:'Direct + Book',tag:'RECOMMENDED',hughes:['FIC','Cold Reading','Embedded Cmd','Double Bind'],msg:'Hi '+fn+' \u2014 the '+L.vehicle+' is here at Hendrick Honda Charlotte. You clearly did your research.'+tLine+' When you come in, I\'ll have it ready. This week or next? \u2013Bryan, Hendrick Honda'},
+      {label:'Simple + Clean',tag:'LOW PRESSURE',hughes:['Embedded Cmd','Double Bind'],msg:'Hi '+fn+' \u2014 thanks for reaching out on the '+L.vehicle+'. It\'s available and I can have it pulled up anytime. What day works best? \u2013Bryan, Hendrick Honda'},
+    ],
+    emails:[
+      {label:'Standard + Warm',tag:'RECOMMENDED',hughes:['FIC','Cold Reading','Embedded Cmd','Double Bind'],subject:L.vehicle+' \u2014 Available for You, '+fn,msg:'Hi '+fn+',\n\nThank you for reaching out. The '+L.vehicle+' is here at Hendrick Honda Charlotte.'+tBlock+'\n\nWhen you come in, I\'ll have it ready \u2014 most visits are under an hour from arrival to decision.\n\nThis week or next?\n\nBryan\nHendrick Honda Charlotte\n980-327-1238'},
+    ],
+    followups:{
+      repliedScenario:'Can you tell me more about current pricing?',
+      repliedTexts:[{label:'Pricing + Book',tag:'RECOMMENDED',hughes:['FIC','Embedded Cmd','Double Bind'],msg:'Of course \u2014 the '+L.vehicle+' is priced at current market and I\'ll walk you through all current Honda offers when you come in. Tomorrow or this weekend? \u2013Bryan'}],
+      repliedEmails:[{label:'Pricing Context',tag:'RECOMMENDED',hughes:['FIC','Embedded Cmd','Double Bind'],subject:'Pricing on the '+L.vehicle+' \u2014 '+fn,msg:'Hi '+fn+',\n\nHappy to go over pricing. The '+L.vehicle+' is competitively priced and I can walk you through current Honda offers when you come in.\n\nMost customers are in and out in under an hour.\n\nThis week or next?\n\nBryan\nHendrick Honda Charlotte\n980-327-1238'}],
+      noReplyDay:'Day 2',
+      noReplyTexts:[{label:'Check-In',tag:'RECOMMENDED',hughes:['FIC','Embedded Cmd'],msg:'Hi '+fn+' \u2014 just checking in on the '+L.vehicle+'. Still available and happy to answer any questions. \u2013Bryan, Hendrick Honda'}],
+      noReplyEmails:[{label:'Follow-Up',tag:'RECOMMENDED',hughes:['FIC','Double Bind'],subject:'Still Available \u2014 '+fn,msg:'Hi '+fn+',\n\nFollowing up on the '+L.vehicle+'. Still available \u2014 happy to answer any questions or set up a quick visit.\n\nThis week or next?\n\nBryan\nHendrick Honda Charlotte\n980-327-1238'}],
+    }
+  };
+}
+
+function runAnalysis(){
+  var name=document.getElementById('in-name').value.trim();
+  var vehicle=document.getElementById('in-vehicle').value.trim();
+  if(!name||!vehicle){alert('Please enter a customer name and vehicle.');return;}
+  LEAD={
+    name:name,firstName:name.split(' ')[0],
+    phone:document.getElementById('in-phone').value.trim(),
+    email:document.getElementById('in-email').value.trim(),
+    source:document.getElementById('in-source').value.trim(),
+    vehicle:vehicle,
+    trade:document.getElementById('in-trade').value.trim(),
+    location:document.getElementById('in-location').value.trim(),
+    status:document.getElementById('in-status').value.trim(),
+    svc:document.getElementById('in-svc').value.trim(),
+    ltv:document.getElementById('in-ltv').value.trim(),
+    equity:document.getElementById('in-equity').value.trim(),
+    notes:document.getElementById('in-notes').value.trim(),
+  };
+  var trans=detectTransplant(LEAD.phone);
+  var mbs=detectMBS(LEAD.source,LEAD.vehicle,LEAD.trade,LEAD.notes,LEAD.svc);
+  var sr=calcScore(LEAD);
+  RESULT={templates:getT(LEAD,mbs,trans),mbs:mbs,transplant:trans,score:sr.score,reasons:sr.reasons};
+  document.getElementById('screen-input').style.display='none';
+  document.getElementById('screen-results').style.display='block';
+  renderLeft(mbs,sr.score,sr.reasons,trans);
+  renderRight();
+}
+
+function renderLeft(mbs,score,reasons,trans){
+  var col=sc(score);
+  var mbc=MBC[mbs.color]||'#64748B';
+  var mbt=mbs.color==='Yellow'?'#000':'#fff';
+  var T=RESULT.templates;
+  var circum=2*Math.PI*22;
+  var intel='<div class="score-block"><div class="score-ring"><svg width="56" height="56" viewBox="0 0 56 56"><circle cx="28" cy="28" r="22" fill="none" stroke="#1E293B" stroke-width="5"/><circle cx="28" cy="28" r="22" fill="none" stroke="'+col+'" stroke-width="5" stroke-dasharray="'+circum+'" stroke-dashoffset="'+circum*(1-score/100)+'" stroke-linecap="round"/></svg><div class="score-num"><div class="score-n" style="color:'+col+'">'+score+'</div><div class="score-l" style="color:'+col+'">Score</div></div></div><div><div class="sr-title">Purchase Likelihood</div>'+reasons.slice(0,4).map(function(r){return'<div class="sr-item">\u2705 '+r+'</div>';}).join('')+'</div></div>';
+  intel+=ir('Customer',LEAD.name);
+  if(LEAD.phone)intel+=ir('Phone',LEAD.phone);
+  if(LEAD.email)intel+=ir('Email',LEAD.email);
+  intel+=ir('Vehicle',LEAD.vehicle);
+  if(LEAD.trade)intel+=ir('Trade',LEAD.trade);
+  intel+=ir('Source',LEAD.source||'\u2014');
+  intel+=ir('Status',LEAD.status||'\u2014');
+  if(LEAD.svc)intel+=ir('Service Visits',LEAD.svc);
+  if(LEAD.ltv)intel+=ir('Sales LTV',LEAD.ltv);
+  if(LEAD.equity)intel+=ir('Equity',LEAD.equity);
+  if(trans)intel+=ir('Location',trans.replace('=',' \u2192 '));
+  intel+='<div class="mbs-badge" style="background:'+mbc+'12;border:1px solid '+mbc+'33;margin-top:8px"><div class="mbs-circle" style="background:'+mbc+';color:'+mbt+'">'+mbs.letter+'</div><div><div style="font-size:11px;font-weight:800;color:'+mbc+'">'+mbs.profile+' / '+mbs.color+'</div><div style="font-size:9px;color:#94A3B8;margin-top:1px;line-height:1.3">'+mbs.reason+'</div></div></div>';
+  document.getElementById('lp-intel').innerHTML=intel;
+  var steps=[['1','SIGNALS','#3B82F6',T.signals.map(function(s){return'\u2022 '+s;}).join('\n')],['2','SUFFERING','#EC4899',T.suffering],['3','MBS: '+mbs.profile.toUpperCase(),mbc,mbs.color+' / '+mbs.profile+'\n'+mbs.reason],['4','NEEDS/FEARS','#EF4444','Need: Competence + validation \u2014 right vehicle, right value\nFear: Making a mistake or being played'],['5','VOSS TECHNIQUE','#2980B9',(T.texts[0].hughes||[]).join(' + ')],['6','SENSORY','#8B5CF6','Default Kinesthetic \u2014 feel language'],['7','FIC','#3B82F6','Focus: '+T.fic.f+'\nInterest: '+T.fic.i+'\nCuriosity: '+T.fic.c],['8','LINGUISTICS','#22C55E','EC: '+T.s8.ec+'\nCold Read: '+T.s8.cr+'\n3P: '+T.s8.tp+'\nScarcity: '+(T.s8.sc||'N/A')],['9','DOUBLE BIND','#F59E0B',T.s9],['10','REVIEW','#64748B',(T.s10||[]).map(function(s){return'\u2705 '+s;}).join('\n')]];
+  document.getElementById('lp-steps').innerHTML=steps.map(function(s){return'<div class="step-card" style="background:'+s[2]+'08;border:1px solid '+s[2]+'33"><div class="step-num" style="color:'+s[2]+'">STEP '+s[0]+': '+s[1]+'</div><div class="step-body">'+s[3]+'</div></div>';}).join('');
+}
+
+function ir(l,v){return'<div class="irow"><div class="ilabel">'+l+'</div><div class="ivalue">'+v+'</div></div>';}
+
+function renderRight(){
+  document.getElementById('right-panel').innerHTML='<div class="ctabs"><button class="ctab on" onclick="setRT(\'text\',this)">\uD83D\uDCF1 Text</button><button class="ctab" onclick="setRT(\'email\',this)">\u2709\uFE0F Email</button><button class="ctab" onclick="setRT(\'followup\',this)">\u21A9\uFE0F Follow-Up</button></div><div class="rinner" id="rc"></div>';
+  renderRC('text');
+}
+
+function renderRC(tab){
+  var T=RESULT.templates;
+  var el=document.getElementById('rc');
+  if(tab==='text'){
+    el.innerHTML='<button class="new-btn" onclick="backToInput()">\u2190 New Analysis</button><div class="sec-title">Text / SMS Responses</div>'+T.texts.map(function(o,i){return mo(o,'t'+i,selT,function(k){selT=k;renderRC('text');});}).join('');
+  }else if(tab==='email'){
+    el.innerHTML='<button class="new-btn" onclick="backToInput()">\u2190 New Analysis</button><div class="sec-title">Email Responses</div>'+T.emails.map(function(o,i){return mo(o,'e'+i,selE,function(k){selE=k;renderRC('email');});}).join('');
+  }else{
+    var rep=T.followups;
+    var ftabs='<div class="fu-tabs"><button class="futab '+(fuMode==='replied'?'on':'')+'" onclick="setFU(\'replied\')">&#x1F4AC; Replied</button><button class="futab '+(fuMode==='noReply'?'on':'')+'" onclick="setFU(\'noReply\')">\u23F0 No Response</button></div>';
+    if(fuMode==='replied'){
+      el.innerHTML='<button class="new-btn" onclick="backToInput()">\u2190 New Analysis</button>'+ftabs+'<div class="rep-bubble"><div class="rep-lbl">Customer Replied</div><div class="rep-txt">&ldquo;'+rep.repliedScenario+'&rdquo;</div></div><div class="sub-sec">Text Follow-Ups</div>'+rep.repliedTexts.map(function(o,i){return mo(o,'frt'+i,selFT,function(k){selFT=k;renderRC('followup');});}).join('')+'<div class="sub-sec">Email Follow-Ups</div>'+rep.repliedEmails.map(function(o,i){return mo(o,'fre'+i,selFE,function(k){selFE=k;renderRC('followup');});}).join('');
+    }else{
+      el.innerHTML='<button class="new-btn" onclick="backToInput()">\u2190 New Analysis</button>'+ftabs+'<div class="rep-bubble" style="border-left-color:#64748B"><div class="rep-lbl" style="color:#64748B">No Response \u2014 '+rep.noReplyDay+'</div></div><div class="sub-sec">Text Follow-Ups</div>'+rep.noReplyTexts.map(function(o,i){return mo(o,'fnt'+i,selFT,function(k){selFT=k;renderRC('followup');});}).join('')+'<div class="sub-sec">Email Follow-Ups</div>'+rep.noReplyEmails.map(function(o,i){return mo(o,'fne'+i,selFE,function(k){selFE=k;renderRC('followup');});}).join('');
+    }
+  }
+}
+
+function mo(o,key,activeKey,onClick){
+  var tc=TC[o.tag]||'#64748B';
+  var on=activeKey===key;
+  var msg=o.msg.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  return'<div class="mopt" style="background:'+(on?'#111827':'var(--bg2)')+';border:'+(on?'2px solid '+tc:'1px solid var(--bdr)')+';" onclick="mclick(this,\''+key+'\','+(on?'true':'false')+')"><div class="mopt-hdr"><div class="mopt-left"><div class="opt-radio" style="border-color:'+(on?tc:'var(--bdr2)')+';">'+(on?'<div class="opt-dot" style="background:'+tc+'"></div>':'')+'</div><div><div class="opt-lbl">'+o.label+'</div><div class="opt-tags">'+(o.hughes||[]).map(function(h){return'<span class="htag" style="background:'+(HC[h]||'#64748B')+'22;color:'+(HC[h]||'#64748B')+'">'+h+'</span>';}).join('')+'</div></div></div><span class="ttag" style="background:'+tc+'1A;color:'+tc+'">'+o.tag+'</span></div>'+(on?'<div class="mopt-body">'+(o.subject?'<div class="m-subject">Subject: <span>'+o.subject+'</span></div>':'')+'<div class="m-bubble"><pre>'+msg+'</pre></div><button class="copy-btn" id="cb-'+key+'" onclick="event.stopPropagation();doCopy(\''+key+'\')">Copy</button></div>':'')+'</div>';
+}
+
+var _msgs={};
+function mclick(el,key,wasOn){
+  var T=RESULT.templates;
+  var all=T.texts.concat(T.emails).concat(T.followups.repliedTexts||[]).concat(T.followups.repliedEmails||[]).concat(T.followups.noReplyTexts||[]).concat(T.followups.noReplyEmails||[]);
+  all.forEach(function(o,i){
+    var keys=['t','e','frt','fre','fnt','fne'];
+    var totals=[T.texts.length,T.emails.length,(T.followups.repliedTexts||[]).length,(T.followups.repliedEmails||[]).length,(T.followups.noReplyTexts||[]).length,(T.followups.noReplyEmails||[]).length];
+    var idx=0,offset=0;
+    for(var k=0;k<keys.length;k++){if(i<offset+totals[k]){idx=i-offset;_msgs[keys[k]+idx]=o.msg;break;}offset+=totals[k];}
+  });
+  if(rTab==='text'){selT=wasOn?null:key;}
+  else if(rTab==='email'){selE=wasOn?null:key;}
+  else{if(fuMode==='replied'){selFT=wasOn?null:key;selFE=wasOn?null:key;}else{selFT=wasOn?null:key;selFE=wasOn?null:key;}}
+  renderRC(rTab);
+}
+
+function doCopy(key){
+  var T=RESULT.templates;
+  var all=[];
+  var prefixes=['t','e','frt','fre','fnt','fne'];
+  var arrs=[T.texts,T.emails,T.followups.repliedTexts||[],T.followups.repliedEmails||[],T.followups.noReplyTexts||[],T.followups.noReplyEmails||[]];
+  for(var p=0;p<prefixes.length;p++){for(var i=0;i<arrs[p].length;i++){if(prefixes[p]+i===key){navigator.clipboard.writeText(arrs[p][i].msg);var b=document.getElementById('cb-'+key);if(b){b.textContent='\u2713 Copied';b.classList.add('done');setTimeout(function(){b.textContent='Copy';b.classList.remove('done');},1800);}return;}}}
+}
+
+function setLP(tab,el){document.querySelectorAll('.ptab').forEach(function(b){b.classList.remove('on');});el.classList.add('on');document.getElementById('lp-intel').style.display=tab==='intel'?'block':'none';document.getElementById('lp-steps').style.display=tab==='steps'?'block':'none';}
+function setRT(tab,el){rTab=tab;selT=null;selE=null;selFT=null;selFE=null;document.querySelectorAll('.ctab').forEach(function(b){b.classList.remove('on');});el.classList.add('on');renderRC(tab);}
+function setFU(mode){fuMode=mode;selFT=null;selFE=null;renderRC('followup');}
+function backToInput(){document.getElementById('screen-results').style.display='none';document.getElementById('screen-input').style.display='block';}
+
+(function(){
+  var p=new URLSearchParams(window.location.search);
+  if(!p.get('name'))return;
+  document.getElementById('in-name').value=p.get('name')||'';
+  document.getElementById('in-phone').value=p.get('phone')||'';
+  document.getElementById('in-email').value=p.get('email')||'';
+  document.getElementById('in-source').value=p.get('source')||'';
+  document.getElementById('in-vehicle').value=p.get('vehicle')||'';
+  document.getElementById('in-trade').value=p.get('trade')||'';
+  document.getElementById('in-location').value=p.get('location')||'';
+  document.getElementById('in-status').value=p.get('status')||'Uncontacted';
+  document.getElementById('in-svc').value=p.get('svcVisits')||'';
+  document.getElementById('in-ltv').value=p.get('ltv')||'';
+  document.getElementById('in-equity').value=p.get('equity')||'';
+  document.getElementById('in-notes').value=p.get('notes')||'';
+  if(p.get('autorun')==='1'&&p.get('name')&&p.get('vehicle'))setTimeout(runAnalysis,300);
+})();
+</script>
+</body>
+</html>

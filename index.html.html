@@ -1,0 +1,678 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>BDC Super Analysis — Hendrick Honda</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;600;700&family=IBM+Plex+Sans:wght@300;400;600;700;800&display=swap');
+
+:root {
+  --bg:     #06080F;
+  --bg2:    #0B1120;
+  --bg3:    #0F1728;
+  --border: #1E293B;
+  --border2:#2A3A50;
+  --text:   #E2E8F0;
+  --sub:    #64748B;
+  --muted:  #334155;
+  --blue:   #00558C;
+  --blue2:  #0070B8;
+  --red:    #CC0000;
+  --green:  #22C55E;
+  --amber:  #F59E0B;
+  --purple: #A855F7;
+  --pink:   #EC4899;
+  --cyan:   #06B6D4;
+  --orange: #F97316;
+  --Y:      #EAB308;
+  --B:      #3B82F6;
+  --G:      #22C55E;
+  --R:      #EF4444;
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: 'IBM Plex Sans', sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; }
+code, pre, .mono { font-family: 'IBM Plex Mono', monospace; }
+
+/* ── HEADER ─────────────────────────────────────────────── */
+.hdr {
+  background: linear-gradient(135deg, #00355A 0%, var(--blue) 100%);
+  padding: 12px 20px;
+  display: flex; align-items: center; gap: 12px;
+  border-bottom: 1px solid rgba(255,255,255,.1);
+  position: sticky; top: 0; z-index: 100;
+}
+.hdr-logo { width: 32px; height: 32px; border-radius: 6px; background: #fff; display: flex; align-items: center; justify-content: center; font-weight: 900; color: var(--blue); font-size: 14px; flex-shrink: 0; }
+.hdr-title { font-size: 15px; font-weight: 800; color: #fff; letter-spacing: -.2px; }
+.hdr-sub   { font-size: 10px; color: rgba(255,255,255,.55); letter-spacing: 1px; text-transform: uppercase; margin-top: 1px; }
+.hdr-badge { margin-left: auto; background: rgba(255,255,255,.1); color: rgba(255,255,255,.7); padding: 4px 10px; border-radius: 20px; font-size: 9px; font-weight: 700; letter-spacing: 1px; text-transform: uppercase; border: 1px solid rgba(255,255,255,.15); }
+
+/* ── MAIN LAYOUT ─────────────────────────────────────────── */
+.layout { display: flex; height: calc(100vh - 57px); overflow: hidden; }
+.panel-left  { width: 320px; flex-shrink: 0; border-right: 1px solid var(--border); display: flex; flex-direction: column; overflow: hidden; }
+.panel-right { flex: 1; overflow-y: auto; }
+
+/* ── INPUT SCREEN ────────────────────────────────────────── */
+#screen-input { max-width: 640px; margin: 0 auto; padding: 40px 24px; }
+.input-header { text-align: center; margin-bottom: 32px; }
+.input-header h1 { font-size: 28px; font-weight: 800; background: linear-gradient(135deg, #fff, #94A3B8); -webkit-background-clip: text; -webkit-text-fill-color: transparent; margin-bottom: 6px; }
+.input-header p  { font-size: 13px; color: var(--sub); }
+
+.input-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 12px; }
+.input-full  { margin-bottom: 12px; }
+
+.field label { display: block; font-size: 10px; font-weight: 700; color: var(--sub); text-transform: uppercase; letter-spacing: .8px; margin-bottom: 5px; }
+.field input, .field select, .field textarea {
+  width: 100%; background: var(--bg2); border: 1px solid var(--border2); border-radius: 8px;
+  padding: 10px 12px; color: var(--text); font-family: inherit; font-size: 13px; outline: none;
+  transition: border-color .15s;
+}
+.field input:focus, .field select:focus, .field textarea:focus { border-color: var(--blue2); }
+.field textarea { resize: vertical; min-height: 70px; }
+.field select option { background: #0B1120; }
+
+.analyze-btn {
+  width: 100%; padding: 16px; border: none; border-radius: 10px;
+  background: linear-gradient(135deg, var(--blue), var(--blue2));
+  color: #fff; font-family: inherit; font-size: 15px; font-weight: 800;
+  cursor: pointer; letter-spacing: -.2px; margin-top: 8px;
+  transition: opacity .15s, transform .1s;
+}
+.analyze-btn:hover { opacity: .9; transform: translateY(-1px); }
+.analyze-btn:disabled { opacity: .5; cursor: not-allowed; transform: none; }
+
+/* ── LOADING ─────────────────────────────────────────────── */
+#screen-loading { display: flex; flex-direction: column; align-items: center; justify-content: center; height: calc(100vh - 57px); gap: 20px; }
+.loading-ring { width: 56px; height: 56px; border: 3px solid var(--border2); border-top-color: var(--blue2); border-radius: 50%; animation: spin 1s linear infinite; }
+@keyframes spin { to { transform: rotate(360deg); } }
+.loading-steps { display: flex; flex-direction: column; gap: 6px; text-align: center; }
+.loading-step  { font-size: 12px; color: var(--sub); transition: color .3s; }
+.loading-step.active { color: var(--blue2); font-weight: 700; }
+.loading-step.done   { color: var(--green); }
+
+/* ── LEFT PANEL TABS ─────────────────────────────────────── */
+.panel-tabs { display: flex; border-bottom: 1px solid var(--border); flex-shrink: 0; }
+.ptab { flex: 1; padding: 10px 8px; border: none; border-bottom: 2px solid transparent; background: transparent; color: var(--sub); font-family: inherit; font-size: 10px; font-weight: 700; cursor: pointer; letter-spacing: .5px; text-transform: uppercase; transition: color .15s; }
+.ptab.active { color: var(--text); border-bottom-color: var(--blue2); }
+
+.panel-scroll { flex: 1; overflow-y: auto; padding: 12px; }
+.panel-scroll::-webkit-scrollbar { width: 4px; }
+.panel-scroll::-webkit-scrollbar-track { background: transparent; }
+.panel-scroll::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 4px; }
+
+/* ── SCORE RING ──────────────────────────────────────────── */
+.score-block { display: flex; align-items: center; gap: 12px; padding: 12px; background: var(--bg3); border-radius: 10px; margin-bottom: 10px; border: 1px solid var(--border); }
+.score-ring  { position: relative; width: 60px; height: 60px; flex-shrink: 0; }
+.score-ring svg { transform: rotate(-90deg); }
+.score-ring .num { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; }
+.score-ring .n { font-size: 20px; font-weight: 900; line-height: 1; }
+.score-ring .l { font-size: 7px; text-transform: uppercase; letter-spacing: .5px; margin-top: 1px; opacity: .6; }
+.score-reasons .sr-title { font-size: 9px; font-weight: 700; color: var(--sub); text-transform: uppercase; letter-spacing: .8px; margin-bottom: 5px; }
+.score-reason { font-size: 10px; color: #94A3B8; line-height: 1.65; }
+
+/* ── INTEL FIELDS ────────────────────────────────────────── */
+.intel-row { padding: 5px 0; border-bottom: 1px solid rgba(30,41,59,.6); }
+.intel-label { font-size: 8px; color: var(--muted); font-weight: 700; text-transform: uppercase; letter-spacing: .6px; }
+.intel-value { font-size: 11px; color: var(--text); line-height: 1.35; margin-top: 1px; }
+
+.mbs-badge { display: flex; align-items: center; gap: 6px; padding: 8px; border-radius: 8px; margin-top: 8px; }
+.mbs-circle { width: 24px; height: 24px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 900; font-size: 10px; flex-shrink: 0; }
+
+/* ── ANALYSIS STEPS ──────────────────────────────────────── */
+.step-card { border-radius: 7px; padding: 8px 10px; margin-bottom: 6px; }
+.step-num  { font-size: 8px; font-weight: 800; letter-spacing: .8px; text-transform: uppercase; margin-bottom: 3px; }
+.step-body { font-size: 9px; color: #94A3B8; line-height: 1.5; white-space: pre-wrap; }
+
+/* ── RIGHT PANEL CHANNEL TABS ────────────────────────────── */
+.channel-tabs { display: flex; border-bottom: 1px solid var(--border); position: sticky; top: 0; background: #080C18; z-index: 10; }
+.ctab { flex: 1; padding: 12px 8px; border: none; border-bottom: 2px solid transparent; background: transparent; color: var(--sub); font-family: inherit; font-size: 11px; font-weight: 700; cursor: pointer; transition: color .15s; }
+.ctab.active { color: var(--text); border-bottom-color: var(--blue2); }
+
+.right-inner { padding: 16px 18px; }
+.section-title { font-size: 9px; font-weight: 800; color: var(--sub); letter-spacing: 1.2px; text-transform: uppercase; margin-bottom: 12px; }
+
+/* ── MESSAGE OPTIONS ─────────────────────────────────────── */
+.msg-opt { border-radius: 10px; margin-bottom: 8px; cursor: pointer; overflow: hidden; transition: border-color .15s; }
+.msg-opt-header { padding: 10px 14px; display: flex; align-items: center; justify-content: space-between; }
+.msg-opt-left  { display: flex; align-items: flex-start; gap: 8px; }
+.opt-radio     { width: 18px; height: 18px; border-radius: 50%; border: 2px solid var(--border2); display: flex; align-items: center; justify-content: center; flex-shrink: 0; margin-top: 1px; transition: border-color .15s; }
+.opt-radio-dot { width: 10px; height: 10px; border-radius: 50%; }
+.opt-label-text { font-size: 12px; font-weight: 700; }
+.opt-tags      { display: flex; gap: 3px; flex-wrap: wrap; margin-top: 4px; }
+.opt-tag       { font-size: 7px; padding: 1px 5px; border-radius: 8px; font-weight: 800; letter-spacing: .3px; }
+.tag-badge     { display: inline-block; padding: 2px 8px; border-radius: 10px; font-size: 8px; font-weight: 800; letter-spacing: .5px; }
+
+.msg-opt-body  { padding: 0 14px 12px; }
+.msg-subject   { font-size: 10px; color: var(--sub); margin-bottom: 6px; }
+.msg-subject span { color: #CBD5E1; }
+.msg-bubble    { background: #060A14; border-radius: 8px; padding: 12px 14px; border: 1px solid var(--border); }
+.msg-bubble pre { font-family: 'IBM Plex Sans', sans-serif; font-size: 12px; line-height: 1.65; color: #CBD5E1; white-space: pre-wrap; margin: 0; }
+.copy-btn { margin-top: 8px; padding: 6px 16px; border-radius: 6px; border: none; background: linear-gradient(135deg, var(--blue), var(--blue2)); color: #fff; font-family: inherit; font-weight: 800; font-size: 11px; cursor: pointer; transition: opacity .15s; }
+.copy-btn:hover { opacity: .85; }
+.copy-btn.done  { background: var(--green); }
+
+/* ── FOLLOW-UP TABS ──────────────────────────────────────── */
+.fu-tabs { display: flex; background: #111827; border-radius: 8px; padding: 3px; margin-bottom: 14px; }
+.futab   { flex: 1; padding: 8px; border-radius: 6px; border: none; background: transparent; color: var(--sub); font-family: inherit; font-size: 10px; font-weight: 700; cursor: pointer; transition: all .15s; }
+.futab.active { background: var(--blue); color: #fff; }
+.replied-bubble { background: #111827; border-radius: 8px; padding: 10px 12px; margin-bottom: 12px; border-left: 3px solid var(--amber); }
+.replied-label  { font-size: 8px; font-weight: 700; color: var(--amber); margin-bottom: 4px; text-transform: uppercase; letter-spacing: .8px; }
+.replied-text   { font-size: 11px; font-style: italic; color: #CBD5E1; line-height: 1.5; }
+
+.sub-section-title { font-size: 9px; font-weight: 700; color: var(--sub); text-transform: uppercase; letter-spacing: .8px; margin: 12px 0 6px; }
+
+/* ── CRM NOTE ────────────────────────────────────────────── */
+.crm-note { background: var(--bg3); border: 1px solid var(--border); border-radius: 8px; padding: 10px 12px; margin-top: 16px; }
+.crm-label { font-size: 9px; font-weight: 700; color: var(--sub); text-transform: uppercase; letter-spacing: .8px; margin-bottom: 5px; }
+.crm-text  { font-size: 11px; color: #94A3B8; font-family: 'IBM Plex Mono', monospace; line-height: 1.5; }
+
+/* ── NEW ANALYSIS BTN ────────────────────────────────────── */
+.new-analysis-btn { display: block; margin: 0 0 16px; padding: 8px 16px; border-radius: 7px; border: 1px solid var(--border2); background: var(--bg3); color: var(--sub); font-family: inherit; font-size: 10px; font-weight: 700; cursor: pointer; letter-spacing: .5px; text-transform: uppercase; transition: color .15s; }
+.new-analysis-btn:hover { color: var(--text); }
+
+/* ── SCROLLBARS ──────────────────────────────────────────── */
+::-webkit-scrollbar { width: 5px; height: 5px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: #1E293B; border-radius: 4px; }
+</style>
+</head>
+<body>
+
+<div class="hdr">
+  <div class="hdr-logo">H</div>
+  <div>
+    <div class="hdr-title">AI BDC Super Analysis</div>
+    <div class="hdr-sub">Voss × Hughes × MBS — Phase 2</div>
+  </div>
+  <div class="hdr-badge">Hendrick Honda Charlotte</div>
+</div>
+
+<!-- INPUT SCREEN -->
+<div id="screen-input">
+  <div class="input-header">
+    <h1>10-Step Super Analysis</h1>
+    <p>Enter lead data manually or launch from the ELeads Chrome extension</p>
+  </div>
+
+  <div class="input-grid">
+    <div class="field"><label>Customer Name</label><input id="in-name" type="text" placeholder="First Last"></div>
+    <div class="field"><label>Phone</label><input id="in-phone" type="text" placeholder="704-555-0000"></div>
+  </div>
+  <div class="input-grid">
+    <div class="field"><label>Email</label><input id="in-email" type="text" placeholder="customer@email.com"></div>
+    <div class="field"><label>Lead Source</label><input id="in-source" type="text" placeholder="TrueCar / Gubagoo / Xchange..."></div>
+  </div>
+  <div class="input-full field"><label>Vehicle of Interest</label><input id="in-vehicle" type="text" placeholder="2026 Honda CR-V EX-L Meteorite Gray"></div>
+  <div class="input-grid">
+    <div class="field"><label>Trade Vehicle</label><input id="in-trade" type="text" placeholder="2021 RAV4 XLE (if any)"></div>
+    <div class="field"><label>Trade VIN</label><input id="in-tradevin" type="text" placeholder="VIN (if visible)"></div>
+  </div>
+  <div class="input-grid">
+    <div class="field"><label>Sales Status</label>
+      <select id="in-status">
+        <option value="">Select...</option>
+        <option>Uncontacted</option><option>Working</option><option>Customer Engaged</option>
+        <option>Hot</option><option>Appointment Set</option><option>VIP- Working</option>
+        <option>Long Term Follow Up</option><option>Non-Responsive</option>
+      </select>
+    </div>
+    <div class="field"><label>Phone Area Code Location</label><input id="in-location" type="text" placeholder="704=Local / 917=NYC..."></div>
+  </div>
+  <div class="input-grid">
+    <div class="field"><label>Service Visits</label><input id="in-svc" type="text" placeholder="0"></div>
+    <div class="field"><label>Sales Lifetime Value</label><input id="in-ltv" type="text" placeholder="$0.00"></div>
+  </div>
+  <div class="input-grid">
+    <div class="field"><label>Equity Value</label><input id="in-equity" type="text" placeholder="(if known)"></div>
+    <div class="field"><label>Purchase Score</label><input id="in-score" type="text" placeholder="0–100"></div>
+  </div>
+  <div class="input-full field"><label>Additional Notes / Sub-Source</label><textarea id="in-notes" placeholder="Sub-source, comments, special context..."></textarea></div>
+
+  <button class="analyze-btn" id="btn-analyze" onclick="runAnalysis()">⚡ Run 10-Step Super Analysis</button>
+</div>
+
+<!-- LOADING SCREEN -->
+<div id="screen-loading" style="display:none">
+  <div class="loading-ring"></div>
+  <div class="loading-steps">
+    <div class="loading-step" id="ls1">Identifying MBS profile...</div>
+    <div class="loading-step" id="ls2">Running 10-step analysis...</div>
+    <div class="loading-step" id="ls3">Generating Voss × Hughes responses...</div>
+    <div class="loading-step" id="ls4">Writing follow-up cadence...</div>
+    <div class="loading-step" id="ls5">Building CRM note...</div>
+  </div>
+</div>
+
+<!-- RESULTS SCREEN -->
+<div id="screen-results" style="display:none">
+  <div class="layout">
+    <div class="panel-left">
+      <div class="panel-tabs">
+        <button class="ptab active" onclick="setLeftTab('intel',this)">Intel</button>
+        <button class="ptab" onclick="setLeftTab('steps',this)">10 Steps</button>
+      </div>
+      <div class="panel-scroll" id="left-intel"></div>
+      <div class="panel-scroll" id="left-steps" style="display:none"></div>
+    </div>
+    <div class="panel-right">
+      <div id="right-panel"></div>
+    </div>
+  </div>
+</div>
+
+<script>
+// ── STATE ────────────────────────────────────────────────────
+let DATA = null;
+let LEAD = null;
+let selText = null, selEmail = null, selFuT = null, selFuE = null;
+let fuMode = 'replied';
+let rightTab = 'text';
+
+const HC = {
+  "FIC":"#3B82F6","Cold Reading":"#A855F7","Suffering":"#EC4899",
+  "Double Bind":"#F59E0B","Embedded Cmd":"#22C55E","Needs/Fears":"#EF4444",
+  "Third-Party":"#06B6D4","Scarcity":"#F97316","Sensory (K)":"#8B5CF6",
+  "Sensory (V)":"#8B5CF6","Accusation Audit":"#EF4444","Mirror":"#64748B",
+  "Calibrated Q":"#3B82F6","Label":"#EC4899"
+};
+const TC = {
+  "RECOMMENDED":"#22C55E","COMPETITIVE":"#F59E0B","LOW PRESSURE":"#3B82F6",
+  "PERSONAL TOUCH":"#8B5CF6","TRANSPLANT LEAN":"#A855F7","GUARDIAN":"#3B82F6",
+  "ANALYST":"#EAB308","DRIVER":"#EF4444","RELATOR":"#22C55E"
+};
+const MBS = { Yellow:"#EAB308", Blue:"#3B82F6", Green:"#22C55E", Red:"#EF4444" };
+const SCORE_COL = n => n>=70?"#22C55E":n>=40?"#F59E0B":"#EF4444";
+
+// ── URL PARAM INGESTION (from Chrome extension) ──────────────
+function loadFromParams() {
+  const p = new URLSearchParams(window.location.search);
+  if (p.get('name')) {
+    document.getElementById('in-name').value    = p.get('name')    || '';
+    document.getElementById('in-phone').value   = p.get('phone')   || '';
+    document.getElementById('in-email').value   = p.get('email')   || '';
+    document.getElementById('in-source').value  = p.get('source')  || '';
+    document.getElementById('in-vehicle').value = p.get('vehicle') || '';
+    document.getElementById('in-trade').value   = p.get('trade')   || '';
+    document.getElementById('in-tradevin').value= p.get('tradeVin')|| '';
+    document.getElementById('in-status').value  = p.get('status')  || '';
+    document.getElementById('in-location').value= p.get('location')|| '';
+    document.getElementById('in-svc').value     = p.get('svcVisits')|| '';
+    document.getElementById('in-ltv').value     = p.get('ltv')     || '';
+    document.getElementById('in-equity').value  = p.get('equity')  || '';
+    document.getElementById('in-score').value   = p.get('score')   || '';
+    document.getElementById('in-notes').value   = p.get('notes')   || '';
+
+    // Auto-run if coming from extension (has name + source)
+    if (p.get('name') && p.get('source') && p.get('autorun') === '1') {
+      setTimeout(runAnalysis, 500);
+    }
+  }
+}
+
+// ── LOADING ANIMATION ────────────────────────────────────────
+function animateLoading() {
+  const steps = [1,2,3,4,5];
+  let i = 0;
+  const iv = setInterval(() => {
+    if (i > 0) document.getElementById('ls'+i).classList.add('done');
+    i++;
+    if (i <= 5) document.getElementById('ls'+i).classList.add('active');
+    if (i > 5) clearInterval(iv);
+  }, 900);
+}
+
+// ── MAIN ANALYSIS ────────────────────────────────────────────
+async function runAnalysis() {
+  LEAD = {
+    name:     document.getElementById('in-name').value.trim(),
+    phone:    document.getElementById('in-phone').value.trim(),
+    email:    document.getElementById('in-email').value.trim(),
+    source:   document.getElementById('in-source').value.trim(),
+    vehicle:  document.getElementById('in-vehicle').value.trim(),
+    trade:    document.getElementById('in-trade').value.trim(),
+    tradeVin: document.getElementById('in-tradevin').value.trim(),
+    status:   document.getElementById('in-status').value.trim(),
+    location: document.getElementById('in-location').value.trim(),
+    svcVisits:document.getElementById('in-svc').value.trim(),
+    ltv:      document.getElementById('in-ltv').value.trim(),
+    equity:   document.getElementById('in-equity').value.trim(),
+    score:    document.getElementById('in-score').value.trim(),
+    notes:    document.getElementById('in-notes').value.trim(),
+  };
+
+  if (!LEAD.name || !LEAD.vehicle) {
+    alert('Please enter at minimum a customer name and vehicle of interest.');
+    return;
+  }
+
+  document.getElementById('screen-input').style.display = 'none';
+  document.getElementById('screen-loading').style.display = 'flex';
+  animateLoading();
+
+  const prompt = buildPrompt(LEAD);
+
+  try {
+    const res = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-20250514',
+        max_tokens: 4000,
+        system: SYSTEM_PROMPT,
+        messages: [{ role: 'user', content: prompt }]
+      })
+    });
+
+    const json = await res.json();
+    const raw  = json.content?.map(b => b.text || '').join('') || '';
+    const clean = raw.replace(/```json|```/g, '').trim();
+    DATA = JSON.parse(clean);
+
+    document.getElementById('screen-loading').style.display = 'none';
+    document.getElementById('screen-results').style.display = 'block';
+
+    renderLeft();
+    renderRight();
+
+  } catch(e) {
+    document.getElementById('screen-loading').style.display = 'none';
+    document.getElementById('screen-input').style.display = 'block';
+    alert('Analysis error: ' + e.message + '\n\nCheck console for details.');
+    console.error(e);
+  }
+}
+
+// ── SYSTEM PROMPT ────────────────────────────────────────────
+const SYSTEM_PROMPT = `You are an expert automotive BDC analyst for Hendrick Honda Charlotte. You run a 10-step "Super Analysis" on every internet lead using three frameworks simultaneously:
+
+FRAMEWORKS:
+1. CHRIS VOSS NEGOTIATION: Tactical empathy, labeling ("It sounds like..."), mirroring, calibrated questions ("How am I supposed to..."), accusation audits, no-oriented questions, black swan discovery. Every message must feel like the customer is being deeply understood, not sold.
+
+2. HUGHES METHODOLOGY techniques — apply these as tags on every message:
+   - FIC (Focus-Interest-Curiosity): Open with specific focus, move to interest, close with curiosity question
+   - Cold Reading: State an accurate inference about the customer from their data signals
+   - Suffering: Identify and acknowledge the quiet pain behind their inquiry
+   - Embedded Commands: Conversational directives embedded in normal sentences ("When you come in..." / "As we put the numbers together...")
+   - Double Bind: Two-choice close, both moving toward yes ("This week or next?" / "Payment range or maximize trade?")
+   - Needs/Fears: Speak directly to deepest need and preempt core fear
+   - Third-Party: "A customer recently..." social proof without pressure
+   - Scarcity: Real, not manufactured urgency ("Only one in network" / "First slot taken")
+   - Sensory (K/V/A): Kinesthetic=feel language, Visual=see language, Auditory=hear language
+
+3. MBS FOUR-COLOR PROFILING:
+   - RED/Driver: Direct, results-focused, bottom-line. Use bold statements and "How" questions. Short messages.
+   - GREEN/Relator: Relationship-focused, family, trust. Use labels and tactical empathy heavily. Warm tone.
+   - BLUE/Guardian: Safety, reliability, risk-averse. Use accusation audits. No surprises. Data-driven.
+   - YELLOW/Analyst: Research-heavy, numbers, specs. Use calibrated questions. Let them reach conclusions.
+
+THE 10-STEP ANALYSIS:
+Step 1 - SIGNALS: List all data signals from the lead (source, phone area code, zip code, trade vehicle, credit indicators, behavior signals)
+Step 2 - SUFFERING: One sentence describing the quiet emotional pain behind this inquiry
+Step 3 - MBS PROFILE: Identify color, profile name, letter, reasoning from signals
+Step 4 - NEEDS/FEARS: Core need and core fear for this specific customer
+Step 5 - VOSS TECHNIQUE: Primary Voss technique to lead with
+Step 6 - SENSORY DEFAULT: K (kinesthetic/feel), V (visual/see), or A (auditory/hear)
+Step 7 - FIC STRUCTURE: Focus sentence, Interest sentence, Curiosity question
+Step 8 - LINGUISTICS: Embedded Command example, Cold Reading statement, Third-Party story, Scarcity angle
+Step 9 - DOUBLE BIND: The closing question/choice
+Step 10 - REVIEW CHECKLIST: 10 checkboxes confirming quality of final message
+
+TRANSPLANT DETECTION: If area code doesn't match Charlotte area (704, 980, 336, 828, 910), flag as transplant and address it directly in messages.
+
+RESPONSE RULES:
+- Text messages: 3-4 sentences MAX. Signed "–Bryan, Hendrick Honda"
+- Emails: Full paragraphs, personal, warm. Signed with name + "Hendrick Honda Charlotte" + 980-327-1238
+- Every option must have Hughes technique tags
+- RECOMMENDED = best overall; other tags = strategic variants
+- Follow-ups: Generate ONE realistic customer reply scenario, then responses to it. Also generate Day 2 no-response follow-up.
+
+OUTPUT: Return ONLY valid JSON, no markdown fences, no preamble. Exact schema:
+{
+  "analysis": {
+    "s1": ["signal1", "signal2"],
+    "s2": "suffering sentence",
+    "s3": { "profile": "Analyst", "color": "Yellow", "letter": "Y", "reason": "reason" },
+    "s4": { "need": "...", "fear": "..." },
+    "s5": "Voss technique name",
+    "s6": "Default Kinesthetic",
+    "s7": { "f": "focus", "i": "interest", "c": "curiosity question" },
+    "s8": { "ec": "embedded cmd example", "cr": "cold reading", "tp": "third party", "sc": "scarcity" },
+    "s9": "double bind question",
+    "s10": ["✅ item1", "✅ item2"]
+  },
+  "texts": [
+    { "label": "Label", "tag": "RECOMMENDED", "hughes": ["FIC","Embedded Cmd"], "msg": "message text" }
+  ],
+  "emails": [
+    { "label": "Label", "tag": "RECOMMENDED", "hughes": ["FIC"], "subject": "Subject line", "msg": "email body" }
+  ],
+  "followups": {
+    "replied": {
+      "scenario": "likely customer reply text",
+      "texts": [{ "label": "...", "tag": "RECOMMENDED", "hughes": [...], "msg": "..." }],
+      "emails": [{ "label": "...", "tag": "RECOMMENDED", "hughes": [...], "subject": "...", "msg": "..." }]
+    },
+    "noReply": {
+      "day": "Day 2",
+      "texts": [{ "label": "...", "tag": "RECOMMENDED", "hughes": [...], "msg": "..." }],
+      "emails": [{ "label": "...", "tag": "RECOMMENDED", "hughes": [...], "subject": "...", "msg": "..." }]
+    }
+  },
+  "crm": "CRM note string",
+  "tier": "HIGH",
+  "score": 74
+}`;
+
+function buildPrompt(lead) {
+  return `Run the full 10-Step Super Analysis on this lead:
+
+Customer: ${lead.name}
+Phone: ${lead.phone} ${lead.location ? '('+lead.location+')' : ''}
+Email: ${lead.email || 'Not provided'}
+Source: ${lead.source}
+Vehicle of Interest: ${lead.vehicle}
+Trade Vehicle: ${lead.trade || 'None listed'}
+Trade VIN: ${lead.tradeVin || 'N/A'}
+Sales Status: ${lead.status || 'Uncontacted'}
+Service Visits: ${lead.svcVisits || '0'}
+Sales Lifetime Value: ${lead.ltv || 'None (new customer)'}
+Equity: ${lead.equity || 'Unknown'}
+Purchase Score: ${lead.score || 'Not scored'}
+Notes / Sub-source: ${lead.notes || 'None'}
+Salesperson: Bryan
+Store: Hendrick Honda Charlotte, South Blvd location
+Network: 90+ Hendrick stores for inventory transfers
+
+Generate all texts, emails, and follow-ups. Return only JSON.`;
+}
+
+// ── RENDER LEFT ──────────────────────────────────────────────
+function renderLeft() {
+  const a = DATA.analysis;
+  const sc = DATA.score || parseInt(LEAD.score) || 0;
+  const col = SCORE_COL(sc);
+  const mbc = MBS[a.s3.color] || '#64748B';
+  const mbText = a.s3.color === 'Yellow' ? '#000' : '#fff';
+
+  // Intel tab
+  let intel = `
+    <div class="score-block">
+      <div class="score-ring">
+        <svg width="60" height="60" viewBox="0 0 60 60">
+          <circle cx="30" cy="30" r="24" fill="none" stroke="#1E293B" stroke-width="6"/>
+          <circle cx="30" cy="30" r="24" fill="none" stroke="${col}" stroke-width="6"
+            stroke-dasharray="${2*Math.PI*24}" stroke-dashoffset="${2*Math.PI*24*(1-sc/100)}"
+            stroke-linecap="round"/>
+        </svg>
+        <div class="num"><div class="n" style="color:${col}">${sc}</div><div class="l" style="color:${col}">Score</div></div>
+      </div>
+      <div class="score-reasons">
+        <div class="sr-title">Purchase Likelihood</div>
+        ${(DATA.analysis.s10||[]).slice(0,4).map(r=>`<div class="score-reason">${r}</div>`).join('')}
+      </div>
+    </div>
+    ${row('Customer', LEAD.name)}
+    ${row('Phone', LEAD.phone + (LEAD.location?' · '+LEAD.location:''))}
+    ${LEAD.email ? row('Email', LEAD.email) : ''}
+    ${row('Vehicle', LEAD.vehicle)}
+    ${LEAD.trade ? row('Trade', LEAD.trade + (LEAD.tradeVin?' · '+LEAD.tradeVin:'')) : ''}
+    ${row('Source', LEAD.source)}
+    ${LEAD.status ? row('Status', LEAD.status) : ''}
+    ${LEAD.svcVisits ? row('Service Visits', LEAD.svcVisits) : ''}
+    ${LEAD.ltv ? row('Sales LTV', LEAD.ltv) : ''}
+    ${LEAD.equity ? row('Equity', LEAD.equity) : ''}
+    <div class="mbs-badge" style="background:${mbc}12;border:1px solid ${mbc}33;margin-top:10px">
+      <div class="mbs-circle" style="background:${mbc};color:${mbText}">${a.s3.letter}</div>
+      <div>
+        <div style="font-size:11px;font-weight:800;color:${mbc}">${a.s3.profile} / ${a.s3.color}</div>
+        <div style="font-size:9px;color:#94A3B8;margin-top:1px;line-height:1.3">${a.s3.reason}</div>
+      </div>
+    </div>
+    <div style="margin-top:10px;padding:8px;background:var(--bg3);border-radius:6px;border:1px solid var(--border)">
+      <div style="font-size:8px;color:var(--sub);font-weight:700;text-transform:uppercase;letter-spacing:.6px;margin-bottom:4px">CRM Note</div>
+      <div style="font-size:9px;color:#94A3B8;font-family:'IBM Plex Mono',monospace;line-height:1.5">${DATA.crm}</div>
+    </div>`;
+  document.getElementById('left-intel').innerHTML = intel;
+
+  // Steps tab
+  const stepDefs = [
+    ['1','SIGNALS','#3B82F6', a.s1.map(s=>'• '+s).join('\n')],
+    ['2','SUFFERING','#EC4899', a.s2],
+    ['3','MBS: '+a.s3.profile.toUpperCase(), mbc, `${a.s3.color} / ${a.s3.profile}\n${a.s3.reason}`],
+    ['4','NEEDS/FEARS','#EF4444', `Need: ${a.s4.need}\nFear: ${a.s4.fear}`],
+    ['5','VOSS','#2980B9', a.s5],
+    ['6','SENSORY','#8B5CF6', a.s6],
+    ['7','FIC','#3B82F6', `Focus: ${a.s7.f}\nInterest: ${a.s7.i}\nCuriosity: ${a.s7.c}`],
+    ['8','LINGUISTICS','#22C55E', `EC: ${a.s8.ec}\nCold Read: ${a.s8.cr}\n3P: ${a.s8.tp}\nScarcity: ${a.s8.sc}`],
+    ['9','DOUBLE BIND','#F59E0B', a.s9],
+    ['10','REVIEW','#64748B', (a.s10||[]).join('\n')],
+  ];
+  document.getElementById('left-steps').innerHTML = stepDefs.map(([n,t,c,d]) =>
+    `<div class="step-card" style="background:${c}08;border:1px solid ${c}33">
+      <div class="step-num" style="color:${c}">STEP ${n}: ${t}</div>
+      <div class="step-body">${d}</div>
+    </div>`
+  ).join('');
+}
+
+function row(label, value) {
+  return `<div class="intel-row"><div class="intel-label">${label}</div><div class="intel-value">${value}</div></div>`;
+}
+
+// ── RENDER RIGHT ─────────────────────────────────────────────
+function renderRight() {
+  const panel = document.getElementById('right-panel');
+  panel.innerHTML = `
+    <div class="channel-tabs">
+      <button class="ctab active" onclick="setRightTab('text',this)">📱 Text</button>
+      <button class="ctab" onclick="setRightTab('email',this)">✉️ Email</button>
+      <button class="ctab" onclick="setRightTab('followup',this)">↩️ Follow-Up</button>
+    </div>
+    <div class="right-inner" id="right-content"></div>`;
+  renderRightContent('text');
+}
+
+function renderRightContent(tab) {
+  const el = document.getElementById('right-content');
+  if (tab === 'text') {
+    el.innerHTML = `<button class="new-analysis-btn" onclick="resetToInput()">← New Analysis</button>
+      <div class="section-title">Text / SMS Responses</div>` +
+      DATA.texts.map((o,i) => msgOpt(o, `t${i}`, selText, k => { selText=k; renderRightContent('text'); })).join('');
+  } else if (tab === 'email') {
+    el.innerHTML = `<button class="new-analysis-btn" onclick="resetToInput()">← New Analysis</button>
+      <div class="section-title">Email Responses</div>` +
+      DATA.emails.map((o,i) => msgOpt(o, `e${i}`, selEmail, k => { selEmail=k; renderRightContent('email'); })).join('');
+  } else if (tab === 'followup') {
+    const fu = DATA.followups;
+    const rep = fu?.replied;
+    const nor = fu?.noReply;
+    el.innerHTML = `<button class="new-analysis-btn" onclick="resetToInput()">← New Analysis</button>
+      <div class="fu-tabs">
+        <button class="futab ${fuMode==='replied'?'active':''}" onclick="setFuMode('replied')">💬 Replied</button>
+        <button class="futab ${fuMode==='noReply'?'active':''}" onclick="setFuMode('noReply')">⏰ No Response</button>
+      </div>` +
+      (fuMode === 'replied' && rep ? `
+        <div class="replied-bubble"><div class="replied-label">Customer Replied</div><div class="replied-text">"${rep.scenario}"</div></div>
+        <div class="sub-section-title">Text Follow-Ups</div>` +
+        (rep.texts||[]).map((o,i)=>msgOpt(o,`frt${i}`,selFuT,k=>{selFuT=k;renderRightContent('followup');})).join('') +
+        `<div class="sub-section-title">Email Follow-Ups</div>` +
+        (rep.emails||[]).map((o,i)=>msgOpt(o,`fre${i}`,selFuE,k=>{selFuE=k;renderRightContent('followup');})).join('')
+      : fuMode === 'noReply' && nor ? `
+        <div class="replied-bubble" style="border-left-color:#64748B"><div class="replied-label" style="color:#64748B">No Response — ${nor.day||'Day 2'}</div></div>
+        <div class="sub-section-title">Text Follow-Ups</div>` +
+        (nor.texts||[]).map((o,i)=>msgOpt(o,`fnt${i}`,selFuT,k=>{selFuT=k;renderRightContent('followup');})).join('') +
+        `<div class="sub-section-title">Email Follow-Ups</div>` +
+        (nor.emails||[]).map((o,i)=>msgOpt(o,`fne${i}`,selFuE,k=>{selFuE=k;renderRightContent('followup');})).join('')
+      : '<div style="color:var(--sub);font-size:12px;padding:16px">No follow-up data for this mode.</div>');
+  }
+}
+
+function msgOpt(o, key, activeKey, onClick) {
+  const tc = TC[o.tag] || '#64748B';
+  const on = activeKey === key;
+  return `<div class="msg-opt" style="background:${on?'#111827':'var(--bg2)'};border:${on?`2px solid ${tc}`:'1px solid var(--border)'}" onclick="(${onClick.toString()})('${on?'':key}')">
+    <div class="msg-opt-header">
+      <div class="msg-opt-left">
+        <div class="opt-radio" style="border-color:${on?tc:'var(--border2)'}">
+          ${on?`<div class="opt-radio-dot" style="background:${tc}"></div>`:''}
+        </div>
+        <div>
+          <div class="opt-label-text">${o.label}</div>
+          <div class="opt-tags">
+            ${(o.hughes||[]).map(h=>`<span class="opt-tag" style="background:${(HC[h]||'#64748B')}22;color:${HC[h]||'#64748B'}">${h}</span>`).join('')}
+          </div>
+        </div>
+      </div>
+      <span class="tag-badge" style="background:${tc}1A;color:${tc}">${o.tag}</span>
+    </div>
+    ${on ? `<div class="msg-opt-body">
+      ${o.subject?`<div class="msg-subject">Subject: <span>${o.subject}</span></div>`:''}
+      <div class="msg-bubble"><pre>${o.msg}</pre></div>
+      <button class="copy-btn" id="cb-${key}" onclick="event.stopPropagation();copyMsg('${key}',\`${o.msg.replace(/`/g,'\\`')}\`)">Copy</button>
+    </div>` : ''}
+  </div>`;
+}
+
+function copyMsg(key, text) {
+  navigator.clipboard.writeText(text);
+  const btn = document.getElementById('cb-'+key);
+  if (btn) { btn.textContent = '✓ Copied'; btn.classList.add('done'); setTimeout(()=>{ btn.textContent='Copy'; btn.classList.remove('done'); }, 1500); }
+}
+
+// ── TAB CONTROLS ─────────────────────────────────────────────
+function setLeftTab(tab, el) {
+  document.querySelectorAll('.ptab').forEach(b => b.classList.remove('active'));
+  el.classList.add('active');
+  document.getElementById('left-intel').style.display = tab==='intel'?'block':'none';
+  document.getElementById('left-steps').style.display = tab==='steps'?'block':'none';
+}
+
+function setRightTab(tab, el) {
+  rightTab = tab;
+  selText = null; selEmail = null; selFuT = null; selFuE = null;
+  document.querySelectorAll('.ctab').forEach(b => b.classList.remove('active'));
+  el.classList.add('active');
+  renderRightContent(tab);
+}
+
+function setFuMode(mode) {
+  fuMode = mode;
+  selFuT = null; selFuE = null;
+  renderRightContent('followup');
+}
+
+function resetToInput() {
+  document.getElementById('screen-results').style.display = 'none';
+  document.getElementById('screen-input').style.display = 'block';
+  [1,2,3,4,5].forEach(i => {
+    const el = document.getElementById('ls'+i);
+    el.classList.remove('active','done');
+  });
+}
+
+// ── INIT ─────────────────────────────────────────────────────
+loadFromParams();
+</script>
+</body>
+</html>

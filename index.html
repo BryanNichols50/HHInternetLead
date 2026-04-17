@@ -39,9 +39,9 @@ body{font-family:'IBM Plex Sans',sans-serif;background:var(--bg);color:var(--tex
 .layout{display:flex;height:calc(100vh - 57px);overflow:hidden;}
 .panel-left{width:310px;flex-shrink:0;border-right:1px solid var(--bdr);display:flex;flex-direction:column;}
 .panel-right{flex:1;overflow-y:auto;}
-.ptabs{display:flex;border-bottom:1px solid var(--bdr);flex-shrink:0;}
-.ptab{flex:1;padding:9px 6px;border:none;border-bottom:2px solid transparent;background:transparent;color:var(--sub);font-family:inherit;font-size:10px;font-weight:700;cursor:pointer;text-transform:uppercase;letter-spacing:.4px;}
-.ptab.on{color:var(--text);border-bottom-color:var(--blue2);}
+.ptabs{display:none;}
+
+
 .pscroll{flex:1;overflow-y:auto;padding:12px;}
 .pscroll::-webkit-scrollbar{width:3px;}
 .pscroll::-webkit-scrollbar-thumb{background:var(--bdr2);border-radius:3px;}
@@ -106,7 +106,7 @@ body{font-family:'IBM Plex Sans',sans-serif;background:var(--bg);color:var(--tex
 </div>
 <div id="screen-input">
   <div class="ih">
-    <h1>10-Step Super Analysis</h1>
+    <h1>BDC Lead Analysis</h1>
     <p>Launch from the Chrome extension for full auto-fill, or paste manually — uses all captured intel</p>
   </div>
   <div class="g2">
@@ -165,17 +165,17 @@ body{font-family:'IBM Plex Sans',sans-serif;background:var(--bg);color:var(--tex
     <div class="field"><label>Similar Units in Stock</label><input id="in-similar" placeholder="3 similar CR-Vs in stock"></div>
     <div class="field"><label>Deal Stage</label><input id="in-dealstage" placeholder="In Showroom / Write Up / TO"></div>
   </div>
-  <button class="run-btn" onclick="runAnalysis()">&#9889; Run 10-Step Super Analysis</button>
+  <button class="run-btn" onclick="runAnalysis()">&#9889; Analyze Lead</button>
 </div>
 <div id="screen-results" style="display:none">
   <div class="layout">
     <div class="panel-left">
-      <div class="ptabs">
-        <button class="ptab on" onclick="setLP('intel',this)">Intel</button>
-        <button class="ptab" onclick="setLP('steps',this)">10 Steps</button>
+      <div class="ptabs" style="display:flex;border-bottom:1px solid #1E293B;flex-shrink:0;">
+        <button class="ptab on" onclick="setLP('intel',this)" style="flex:1;padding:9px 6px;border:none;border-bottom:2px solid var(--blue2);background:transparent;color:#E2E8F0;font-family:inherit;font-size:10px;font-weight:700;cursor:pointer;text-transform:uppercase;letter-spacing:.4px;">📋 Intel</button>
+        <button class="ptab" onclick="setLP('brief',this)" style="flex:1;padding:9px 6px;border:none;border-bottom:2px solid transparent;background:transparent;color:#64748B;font-family:inherit;font-size:10px;font-weight:700;cursor:pointer;text-transform:uppercase;letter-spacing:.4px;">🧠 Brief</button>
       </div>
       <div class="pscroll" id="lp-intel"></div>
-      <div class="pscroll" id="lp-steps" style="display:none"></div>
+      <div class="pscroll" id="lp-brief" style="display:none;"></div>
     </div>
     <div class="panel-right" id="right-panel"></div>
   </div>
@@ -707,6 +707,7 @@ function runAnalysis(){
   document.getElementById('screen-input').style.display='none';
   document.getElementById('screen-results').style.display='block';
   renderLeft();
+  renderBrief();
   renderRight();
 }
 
@@ -736,23 +737,95 @@ function renderLeft(){
   intel+='<div class="mbs-badge" style="background:'+mbc+'12;border:1px solid '+mbc+'33"><div class="mbs-circle" style="background:'+mbc+';color:'+mbt+'">'+mbs.letter+'</div><div><div style="font-size:11px;font-weight:800;color:'+mbc+'">'+mbs.profile+' / '+mbs.color+'</div><div style="font-size:9px;color:#94A3B8;margin-top:2px;line-height:1.35">'+mbs.reason+'</div></div></div>';
   document.getElementById('lp-intel').innerHTML=intel;
 
-  // 10 Steps
-  var steps=[
-    ['1','SIGNALS','#3B82F6',T.signals.map(function(s){return'\u2022 '+s;}).join('\n')],
-    ['2','SUFFERING','#EC4899',T.suffering],
-    ['3','MBS: '+mbs.profile.toUpperCase(),mbc,mbs.color+' / '+mbs.profile+'\n'+mbs.reason],
-    ['4','NEEDS/FEARS','#EF4444','Need: '+(mbs.color==='Green'?'Belonging, connection — felt known and valued':mbs.color==='Yellow'?'Competence, accuracy — right vehicle, right choice':mbs.color==='Blue'?'Security, predictability — no surprises, no risk':'Control, speed — respect their time, bottom line')+'\nFear: '+(mbs.color==='Green'?'Being impersonal, forgotten, just a number':mbs.color==='Yellow'?'Making a mistake, buyer\'s remorse, missing something':mbs.color==='Blue'?'Rejection, judgment, financial exposure, hidden costs':'Loss of control, being manipulated, wasting time')],
-    ['5','VOSS TECHNIQUE','#2980B9',RESULT.voss],
-    ['6','SENSORY CHANNEL','#8B5CF6',RESULT.sensory.ch+'\nResponse uses: '+RESULT.sensory.words.join(', ')],
-    ['7','FIC STRUCTURE','#3B82F6','Focus: '+T.fic.f+'\n\nInterest: '+T.fic.i+'\n\nCuriosity: '+T.fic.c],
-    ['8','LINGUISTICS','#22C55E','Embedded Cmd: '+T.s8.ec+'\nCold Reading: '+T.s8.cr+'\nThird-Party: '+T.s8.tp+'\nScarcity: '+(T.s8.sc||'None — no real data to use')],
-    ['9','DOUBLE BIND','#F59E0B',T.s9],
-    ['10','REVIEW',T.s10.every(function(s){return s.indexOf('\u274c')<0;})?'#22C55E':'#F59E0B',(T.s10||[]).map(function(s){return'\u2713 '+s;}).join('\n')],
-  ];
-  document.getElementById('lp-steps').innerHTML=steps.map(function(s){return'<div class="step-card" style="background:'+s[2]+'08;border:1px solid '+s[2]+'33"><div class="step-num" style="color:'+s[2]+'">STEP '+s[0]+': '+s[1]+'</div><div class="step-body">'+s[3]+'</div></div>';}).join('');
+
 }
 
 function ir(l,v){return'<div class="irow"><div class="ilabel">'+l+'</div><div class="ivalue">'+v+'</div></div>';}
+
+function renderBrief(){
+  var mbs=RESULT.mbs;
+  var mbc=MBC[mbs.color]||'#64748B';
+  var fn=LEAD.firstName||LEAD.name.split(' ')[0];
+  var html='';
+
+  function bsec(icon,label,color,body){
+    return '<div style="background:#0a0f1a;border:1px solid '+(color||'#1E293B')+';border-radius:8px;padding:10px 12px;margin-bottom:8px;">'
+      +'<div style="font-size:9px;font-weight:800;color:'+(color||'#64748B')+';text-transform:uppercase;letter-spacing:.8px;margin-bottom:5px;">'+icon+' '+label+'</div>'
+      +'<div style="font-size:11px;color:#CBD5E1;line-height:1.6;">'+body+'</div>'
+      +'</div>';
+  }
+
+  // ── Who is this person ────────────────────────────────────
+  var profileBody = '<strong style="color:'+mbc+'">'+mbs.profile+' ('+mbs.color+')</strong> — '+mbs.reason;
+  html+=bsec('👤','Personality Profile',mbc,profileBody);
+
+  // ── What is driving this search ───────────────────────────
+  html+=bsec('💢','Pain Point / Suffering','#EC4899',RESULT.suffering);
+
+  // ── What they need + what they fear ──────────────────────
+  var needFear=mbs.color==='Green'
+    ?'<strong>Need:</strong> To feel known and valued as a person — not processed. <strong>Fear:</strong> Being treated as just another number, forgotten after the sale.'
+    :mbs.color==='Yellow'
+    ?'<strong>Need:</strong> Competence and accuracy — to feel they made the objectively right choice. <strong>Fear:</strong> Buyer remorse, missing something, being uninformed.'
+    :mbs.color==='Blue'
+    ?'<strong>Need:</strong> Security and predictability — no surprises, no hidden costs. <strong>Fear:</strong> Rejection, judgment, financial exposure, being embarrassed.'
+    :'<strong>Need:</strong> Control, speed, and significance — to feel respected and in charge. <strong>Fear:</strong> Being manipulated, wasting time, losing control of the process.';
+  html+=bsec('🎯','Need + Fear','#EF4444',needFear);
+
+  // ── Voss technique ────────────────────────────────────────
+  html+=bsec('🎙','Voss Technique to Use','#2980B9',RESULT.voss);
+
+  // ── Tone to use ───────────────────────────────────────────
+  var toneBody=mbs.color==='Green'
+    ?'Warm, personal, conversational. Use their name. Reference history if they have it. Make them feel known. Sound like: <em>"We know you. We appreciate you."</em>'
+    :mbs.color==='Yellow'
+    ?'Detail-rich, low pressure, information-forward. Validate their research. Sound like: <em>"You asked exactly the right question."</em>'
+    :mbs.color==='Blue'
+    ?'Reassuring, no-pressure, transparent. Remove all risk language. Sound like: <em>"No surprises. No obligation. Here is exactly what to expect."</em>'
+    :'Direct, zero fluff, bottom-line first. No pleasantries. Sound like: <em>"Here is the number. Here is the next step."</em>';
+  html+=bsec('🎨','Tone & Voice',mbc,toneBody);
+
+  // ── Lead type strategy ────────────────────────────────────
+  var notes=(LEAD.notes||'');
+  var stratMatch=notes.match(/Strategy:\s*([^|]{20,200})/i);
+  var rulesMatch=notes.match(/rules?[:\s]+([^|]{20,300})/i);
+  if(stratMatch||rulesMatch){
+    var stratBody=(stratMatch?stratMatch[1].trim():'')+(rulesMatch?'<br><br><strong>Rules:</strong> '+rulesMatch[1].trim():'');
+    html+=bsec('📋','Lead Type Strategy','#c084fc',stratBody);
+  }
+
+  // ── What to open with ─────────────────────────────────────
+  var T=RESULT.templates;
+  if(T&&T.fic){
+    var openBody='<strong>Focus (first line):</strong> '+T.fic.f
+      +'<br><br><strong>Interest (substance):</strong> '+T.fic.i
+      +'<br><br><strong>Curiosity (close with):</strong> '+T.fic.c;
+    html+=bsec('💡','What to Open With — FIC','#F59E0B',openBody);
+  }
+
+  // ── Double bind close ─────────────────────────────────────
+  if(T&&T.s9){
+    html+=bsec('🔒','Close With (Double Bind)','#22C55E','<em>"'+T.s9+'"</em>');
+  }
+
+  // ── Transplant ────────────────────────────────────────────
+  if(RESULT.transplant){
+    var tc=RESULT.transplant.military?'#F59E0B':'#A855F7';
+    var tBody=RESULT.transplant.military
+      ?'Fayetteville/Fort Liberty area code. Ask if stationed at Fort Liberty or local to Charlotte. Mention Honda military incentive eligibility naturally — do not assume.'
+      :RESULT.transplant.instate
+      ?RESULT.transplant.city+' area code (in-state). Ask if making the drive to Charlotte or wants a closer Hendrick location.'
+      :'Non-local area code ('+RESULT.transplant.city+'). Charlotte has added 100K+ residents — they are likely a transplant, not out-of-state. Ask naturally: "Are you local to Charlotte or still in '+RESULT.transplant.city.split('/')[0]+'?"';
+    html+=bsec('🌎','Transplant Check',tc,tBody);
+  }
+
+  // ── CRM note ─────────────────────────────────────────────
+  if(T&&T.followups&&T.followups.crmNote){
+    html+=bsec('📝','CRM Log Note','#64748B','<span style="font-family:monospace;font-size:10px;">'+T.followups.crmNote+'</span>');
+  }
+
+  document.getElementById('lp-brief').innerHTML=html;
+}
 
 function renderRight(){
   document.getElementById('right-panel').innerHTML='<div class="ctabs"><button class="ctab on" onclick="setRT(\'text\',this)">\uD83D\uDCF1 Text</button><button class="ctab" onclick="setRT(\'email\',this)">\u2709\uFE0F Email</button><button class="ctab" onclick="setRT(\'followup\',this)">\u21A9\uFE0F Follow-Up</button></div><div class="rinner" id="rc"></div>';
@@ -797,10 +870,14 @@ function doCopy(key){
 }
 
 function setLP(tab,el){
-  document.querySelectorAll('.ptab').forEach(function(b){b.classList.remove('on');});
-  el.classList.add('on');
+  document.querySelectorAll('.ptab').forEach(function(b){
+    b.style.color='#64748B';
+    b.style.borderBottom='2px solid transparent';
+  });
+  el.style.color='#E2E8F0';
+  el.style.borderBottom='2px solid #0070B8';
   document.getElementById('lp-intel').style.display=tab==='intel'?'block':'none';
-  document.getElementById('lp-steps').style.display=tab==='steps'?'block':'none';
+  document.getElementById('lp-brief').style.display=tab==='brief'?'block':'none';
 }
 function setRT(tab,el){
   rTab=tab;selT=null;selE=null;selFT=null;selFE=null;

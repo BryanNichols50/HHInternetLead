@@ -190,9 +190,11 @@ body{font-family:'IBM Plex Sans',sans-serif;background:var(--bg);color:var(--tex
       <div class="ptabs" style="display:flex;border-bottom:1px solid #1E293B;flex-shrink:0;">
         <button class="ptab on" onclick="setLP('intel',this)" style="flex:1;padding:9px 6px;border:none;border-bottom:2px solid var(--blue2);background:transparent;color:#E2E8F0;font-family:inherit;font-size:10px;font-weight:700;cursor:pointer;text-transform:uppercase;letter-spacing:.4px;">📋 Intel</button>
         <button class="ptab" onclick="setLP('brief',this)" style="flex:1;padding:9px 6px;border:none;border-bottom:2px solid transparent;background:transparent;color:#64748B;font-family:inherit;font-size:10px;font-weight:700;cursor:pointer;text-transform:uppercase;letter-spacing:.4px;">🧠 Brief</button>
+        <button class="ptab" onclick="setLP('notes',this)" style="flex:1;padding:9px 6px;border:none;border-bottom:2px solid transparent;background:transparent;color:#64748B;font-family:inherit;font-size:10px;font-weight:700;cursor:pointer;text-transform:uppercase;letter-spacing:.4px;">📝 Notes</button>
       </div>
       <div class="pscroll" id="lp-intel"></div>
       <div class="pscroll" id="lp-brief" style="display:none;"></div>
+      <div class="pscroll" id="lp-notes" style="display:none;"></div>
     </div>
     <div class="panel-right" id="right-panel"></div>
   </div>
@@ -886,6 +888,7 @@ function runAnalysis(){
   document.getElementById('screen-results').style.display='block';
   renderLeft();
   renderBrief();
+  renderNotes();
   renderRight();
 }
 
@@ -919,6 +922,92 @@ function renderLeft(){
 }
 
 function ir(l,v){return'<div class="irow"><div class="ilabel">'+l+'</div><div class="ivalue">'+v+'</div></div>';}
+
+function renderNotes(){
+  var html='';
+  var notes=LEAD.notes||'';
+  var notesL=notes.toLowerCase();
+
+  // ── LIFETIME VALUE ─────────────────────────────────────────
+  var hasLTV=LEAD.ltv||LEAD.svcVisits||LEAD.svc;
+  if(hasLTV){
+    html+='<div style="background:#0a0f1a;border:1px solid #1E293B;border-radius:8px;padding:9px 11px;margin-bottom:8px;">';
+    html+='<div style="font-size:9px;font-weight:700;color:#64748B;text-transform:uppercase;letter-spacing:.8px;margin-bottom:6px;">💰 Lifetime Value</div>';
+    html+='<div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;">';
+    if(LEAD.ltv)     html+='<div><div style="font-size:8px;color:#475569;text-transform:uppercase;">Sales LTV</div><div style="font-size:12px;font-weight:700;color:#22C55E;">'+LEAD.ltv+'</div></div>';
+    if(LEAD.svcVisits||LEAD.svc) html+='<div><div style="font-size:8px;color:#475569;text-transform:uppercase;">Svc Visits</div><div style="font-size:12px;font-weight:700;color:#4db8ff;">'+(LEAD.svcVisits||LEAD.svc)+'</div></div>';
+    html+='</div>';
+    html+='</div>';
+  }
+
+  // ── COMMUNICATION THREAD ──────────────────────────────────
+  var commsHistory=LEAD.commsHistory||[];
+  var actNotes=[];
+
+  // Pull note/text entries from comms history
+  commsHistory.forEach(function(c){
+    if(c.comment&&c.comment.length>3&&
+       !c.comment.startsWith('http')&&
+       !c.comment.includes('crmaiva.ai')&&
+       !c.comment.includes('carwars.com')) {
+      actNotes.push(c);
+    }
+  });
+
+  // Also parse from raw notes field
+  if(notes.indexOf('TRANSCRIPT:')>=0){
+    var transcript=notes.slice(notes.indexOf('TRANSCRIPT:')+11,notes.indexOf('TRANSCRIPT:')+600);
+    if(transcript){
+      html+='<div style="background:#0a0f1a;border:1px solid #1E293B;border-radius:8px;padding:9px 11px;margin-bottom:8px;">';
+      html+='<div style="font-size:9px;font-weight:700;color:#64748B;text-transform:uppercase;letter-spacing:.8px;margin-bottom:6px;">💬 Chat Transcript</div>';
+      html+='<div style="font-size:10px;color:#94A3B8;line-height:1.6;white-space:pre-wrap;">'+transcript.replace(/[|]/g,'\n').trim()+'</div>';
+      html+='</div>';
+    }
+  }
+
+  if(actNotes.length>0){
+    html+='<div style="background:#0a0f1a;border:1px solid #1E293B;border-radius:8px;padding:9px 11px;margin-bottom:8px;">';
+    html+='<div style="font-size:9px;font-weight:700;color:#64748B;text-transform:uppercase;letter-spacing:.8px;margin-bottom:6px;">📝 Activity Notes</div>';
+    actNotes.forEach(function(c){
+      var isInbound=c.outcome==='Customer Replied'||c.outcome==='Received';
+      var oc=isInbound?'#22C55E':c.outcome==='No Answer / VM'?'#EF4444':'#475569';
+      html+='<div style="padding:5px 0;border-bottom:1px solid #0f1520;">';
+      html+='<div style="display:flex;align-items:center;gap:6px;margin-bottom:2px;">';
+      html+='<span style="font-size:8px;font-weight:700;color:'+oc+';">'+c.outcome+'</span>';
+      html+='<span style="font-size:8px;color:#334155;">'+c.date+'</span>';
+      if(c.assignee) html+='<span style="font-size:8px;color:#334155;">· '+c.assignee+'</span>';
+      html+='</div>';
+      html+='<div style="font-size:11px;color:'+(isInbound?'#E2E8F0':'#94A3B8')+';line-height:1.4;'+(isInbound?'font-style:italic;':'')+'">'+
+        (isInbound?'&ldquo;':'')+c.comment+(isInbound?'&rdquo;':'')+
+      '</div>';
+      html+='</div>';
+    });
+    html+='</div>';
+  }
+
+  // ── CONTEXT FROM NOTES FIELD ──────────────────────────────
+  // Show any non-system intent signals pulled from notes
+  var intentParts=[];
+  if(notesL.indexOf('competitor:')>=0){var cn=(notes.match(/Competitor:\s*([\w\s]+?)(?:\s*\||\s*$)/i)||[])[1];if(cn)intentParts.push('Competitor: '+cn.trim());}
+  if(notesL.indexOf('price anchor:')>=0){var pa=(notes.match(/Price anchor:\s*(\$[\d,]+)/i)||[])[1];if(pa)intentParts.push('Price anchor: '+pa);}
+  if(notesL.indexOf('payment: cash')>=0) intentParts.push('Cash buyer');
+  if(notesL.indexOf('trim:')>=0){var tm=(notes.match(/Trim:\s*([\w\s-]+?)(?:\s*\||\s*$)/i)||[])[1];if(tm)intentParts.push('Trim: '+tm.trim());}
+  if(notesL.indexOf('appt at')>=0){var ap=(notes.match(/APPT at\s*([\w\s]+?)(?:\s*—|\s*\||\s*$)/i)||[])[1];if(ap)intentParts.push('Appt at: '+ap.trim());}
+  if(notesL.indexOf('channel switch:')>=0){var ch=(notes.match(/CHANNEL SWITCH:\s*([\w\s]+?)(?:\s*\||\s*$)/i)||[])[1];if(ch)intentParts.push('Contact: '+ch.trim());}
+
+  if(intentParts.length>0){
+    html+='<div style="background:#0a0f1a;border:1px solid #1E293B;border-radius:8px;padding:9px 11px;margin-bottom:8px;">';
+    html+='<div style="font-size:9px;font-weight:700;color:#64748B;text-transform:uppercase;letter-spacing:.8px;margin-bottom:6px;">🧠 Inferred Intel</div>';
+    intentParts.forEach(function(p){
+      html+='<div style="font-size:11px;color:#CBD5E1;padding:2px 0;">• '+p+'</div>';
+    });
+    html+='</div>';
+  }
+
+  if(!html) html='<div style="font-size:11px;color:#475569;padding:8px;">No notes or activity captured yet.</div>';
+
+  document.getElementById('lp-notes').innerHTML=html;
+}
 
 function renderBrief(){
   var mbs=RESULT.mbs;
@@ -1099,6 +1188,7 @@ function setLP(tab,el){
   el.style.borderBottom='2px solid #0070B8';
   document.getElementById('lp-intel').style.display=tab==='intel'?'block':'none';
   document.getElementById('lp-brief').style.display=tab==='brief'?'block':'none';
+  document.getElementById('lp-notes').style.display=tab==='notes'?'block':'none';
 }
 function setRT(tab,el){
   rTab=tab;selT=null;selE=null;selFT=null;selFE=null;

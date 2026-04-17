@@ -104,7 +104,7 @@ body{font-family:'IBM Plex Sans',sans-serif;background:var(--bg);color:var(--tex
   <div><div class="hdr-title">AI BDC Super Analysis v2.0</div><div class="hdr-sub">Voss × Hughes × MBS — Full Intel Pipeline</div></div>
   <div class="hdr-badge">Hendrick Honda Charlotte</div>
 </div>
-<div id="screen-input">
+<div id="screen-input" style="display:none;">
   <div class="ih">
     <h1>BDC Lead Analysis</h1>
     <p>Launch from the Chrome extension for full auto-fill, or paste manually — uses all captured intel</p>
@@ -1255,4 +1255,36 @@ function backToInput(){
   document.getElementById('screen-input').style.display='block';
 }
 
->
+// ── URL PARAMS — auto-fill and bypass form ───────────────
+(function(){
+  var p=new URLSearchParams(window.location.search);
+  if(!p.get('name')) return;
+  // Fill all fields
+  function sv(id,val){var e=document.getElementById(id);if(e&&val)e.value=val;}
+  sv('in-name',     p.get('name'));
+  sv('in-phone',    p.get('phone'));
+  sv('in-email',    p.get('email'));
+  sv('in-vehicle',  p.get('vehicle'));
+  sv('in-trade',    p.get('trade'));
+  sv('in-stock',    p.get('stock'));
+  sv('in-status',   p.get('status'));
+  sv('in-svc',      p.get('svcVisits'));
+  sv('in-ltv',      p.get('ltv'));
+  sv('in-location', p.get('location'));
+  sv('in-stage',    p.get('commsStage'));
+  sv('in-subtime',  p.get('submissionTime'));
+  sv('in-custmsg',  p.get('customerMsg'));
+  sv('in-dealstage',p.get('dealStage'));
+  sv('in-notes',    p.get('notes'));
+  sv('in-similar',  p.get('similarUnits'));
+  if(document.getElementById('in-source'))document.getElementById('in-source').value=p.get('source')||'';
+  // Store salesperson for signatures
+  if(p.get('salesperson'))    window._salesperson     = p.get('salesperson');
+  if(p.get('salespersonFirst'))window._salesperson    = p.get('salespersonFirst');
+  if(p.get('deskManager'))    window._deskManager     = p.get('deskManager');
+  // Run immediately — bypass form
+  setTimeout(function(){ runAnalysis(); }, 300);
+})();
+</script>
+</body>
+</html>

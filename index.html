@@ -167,6 +167,23 @@ body{font-family:'IBM Plex Sans',sans-serif;background:var(--bg);color:var(--tex
   </div>
   <button class="run-btn" onclick="runAnalysis()">&#9889; Analyze Lead</button>
 </div>
+<div id="screen-review" style="display:none;background:#06080F;min-height:100vh;">
+  <div style="background:linear-gradient(135deg,#00355A,#00558C);padding:12px 20px;display:flex;align-items:center;gap:12px;border-bottom:1px solid rgba(255,255,255,.1);position:sticky;top:0;z-index:100;">
+    <div style="width:32px;height:32px;border-radius:6px;background:#fff;display:flex;align-items:center;justify-content:center;font-weight:900;color:#00558C;font-size:14px;">H</div>
+    <div>
+      <div style="font-size:15px;font-weight:800;color:#fff;">Lead Intel Review</div>
+      <div style="font-size:10px;color:rgba(255,255,255,.55);letter-spacing:1px;text-transform:uppercase;">Confirm data before analysis</div>
+    </div>
+    <button onclick="backToInput()" style="margin-left:auto;background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.2);color:rgba(255,255,255,.7);padding:5px 14px;border-radius:20px;font-family:inherit;font-size:11px;cursor:pointer;">← Edit</button>
+  </div>
+  <div style="max-width:900px;margin:0 auto;padding:28px 24px 120px;">
+    <div id="review-data"></div>
+  </div>
+  <div style="position:fixed;bottom:0;left:0;right:0;background:linear-gradient(transparent,#06080F 40%);padding:20px 24px 24px;display:flex;gap:10px;max-width:900px;margin:0 auto;">
+    <button onclick="backToInput()" style="flex:1;padding:14px;border:1px solid #1E293B;border-radius:9px;background:#0B1120;color:#64748B;font-family:inherit;font-size:13px;font-weight:700;cursor:pointer;">← Edit Data</button>
+    <button onclick="runAnalysis()" style="flex:3;padding:14px;border:none;border-radius:9px;background:linear-gradient(135deg,#00558C,#0070B8);color:#fff;font-family:inherit;font-size:14px;font-weight:800;cursor:pointer;">⚡ Generate Responses →</button>
+  </div>
+</div>
 <div id="screen-results" style="display:none">
   <div class="layout">
     <div class="panel-left">
@@ -228,6 +245,15 @@ function detectSuffering(lead){
   // Channel switch — customer set a contact boundary
   if(notes.indexOf('channel switch')>=0||notes.indexOf('email only')>=0||notes.indexOf('prefer by email')>=0||notes.indexOf('text only')>=0||notes.indexOf('prefer text')>=0)
     return 'Customer set explicit contact preference. Guardian signal — they want control of the interaction. Honor it immediately. Open with acknowledgment of their preference.';
+  // Competitor appointment — urgent
+  if(notes.indexOf('appt at')>=0||notes.indexOf('competitor:')>=0)
+    return 'Competitor appointment in notes. Customer actively shopping — may close elsewhere today. Lead with your strongest differentiator immediately. Urgency is real.';
+  // Cash buyer
+  if(notes.indexOf('payment: cash')>=0||notes.indexOf('cash buyer')>=0||notes.indexOf('cash for vehicle')>=0)
+    return 'Cash buyer — no financing friction. Fear is overpaying with no monthly payment anchor. Lead with OTD price transparency and speed of transaction.';
+  // Price anchor
+  if(notes.indexOf('price anchor:')>=0)
+    return 'Competitor price anchor in notes. Customer has a number in mind. Acknowledge it and show value difference or beat it — do not ignore it.';
   // Budget gap from ADF data
   if(notes.indexOf('budget gap')>=0||notes.indexOf('budget ceiling')>=0||notes.indexOf('above ceiling')>=0)
     return 'ADF shows budget ceiling below vehicle asking price. Fear: arriving and finding the price higher than expected. Lead with payment options and out-the-door number — never MSRP first.';
@@ -680,6 +706,13 @@ function buildMultiPaths(lead,mbs,trans,sensory,suffering,voss){
   var src=(lead.source||'').toLowerCase();
   var notes=(lead.notes||'').toLowerCase();
   var hasCS=notes.indexOf('channel switch')>=0||notes.indexOf('email only')>=0||notes.indexOf('prefer by email')>=0;
+  var isCash=notes.indexOf('payment: cash')>=0||notes.indexOf('cash buyer')>=0||notes.indexOf('cash for vehicle')>=0;
+  var hasCompetitor=notes.indexOf('competitor:')>=0;
+  var competitorName=(notes.match(/competitor:\s*([\w\s]+?)(?:\s*\||\s*$)/i)||[])[1]||'';
+  var priceAnchorVal=(notes.match(/price anchor:\s*(\$[\d,]+)/i)||[])[1]||'';
+  var hasCompAppt=notes.indexOf('appt at')>=0;
+  var trimPref=(notes.match(/trim:\s*([\w\s-]+?)(?:\s*\||\s*$)/i)||[])[1]||'';
+  var colorPref=(notes.match(/color:\s*([\w\s]+?)(?:\s*\||\s*$)/i)||[])[1]||'';
   var hasBG=notes.indexOf('budget gap')>=0||notes.indexOf('budget ceiling')>=0;
   var hasTrade=lead.trade&&lead.trade.length>3;
   var tradeShort=hasTrade?lead.trade.split(' ').slice(0,3).join(' '):'';
@@ -688,12 +721,16 @@ function buildMultiPaths(lead,mbs,trans,sensory,suffering,voss){
   var isExisting=parseFloat((lead.ltv||'').replace(/[$,]/g,''))>0;
   var tLine=trans?' I noticed your number is a '+trans.city+' area code — are you local to Charlotte or still in '+trans.city.split('/')[0]+'?':'';
   var col=mbs.color;
-  var sig='—Bryan, Hendrick Honda';
-  var sigE='Bryan\nHendrick Honda Charlotte\n980-327-1238';
+  var spName = lead.salesperson ? lead.salesperson.split(',')[0].trim() : 'Bryan';
+  var sig='–'+spName+', Hendrick Honda';
+  var sigE=spName+'\nHendrick Honda Charlotte\n980-327-1238';
   var n='\n';
   var nn='\n\n';
   // channel ack line
   var csLine=hasCS?'Email it is — completely understood.'+nn:'';
+  var cashLine=isCash?'Since you are paying cash, the only number that matters is the out-the-door total. I will make sure that is the first thing you see.'+nn:'';
+  var competitorLine=hasCompetitor&&priceAnchorVal?'I saw '+priceAnchorVal+' was mentioned. I want to make sure you have the full picture on our side before you make a decision.'+nn:'';
+  var urgencyLine=hasCompAppt?'I understand you may have another appointment — I want to make sure you have our numbers before you go.'+nn:''
   // budget line  
   var bgLine=hasBG?'I want to make sure the number you see here is the number you pay at the dealership — no surprises.'+nn:'';
   // promo
@@ -845,6 +882,7 @@ function runAnalysis(){
   var paths=buildMultiPaths(LEAD,mbs,trans,sensory,suffering,voss);
   RESULT={templates:tmpl,paths:paths,mbs:mbs,transplant:trans,score:sr.score,reasons:sr.reasons,suffering:suffering,voss:voss,sensory:sensory};
   document.getElementById('screen-input').style.display='none';
+  document.getElementById('screen-review').style.display='none';
   document.getElementById('screen-results').style.display='block';
   renderLeft();
   renderBrief();
@@ -1070,7 +1108,118 @@ function setRT(tab,el){
 function setFU(mode){fuMode=mode;selFT=null;selFE=null;renderRC('followup');}
 function backToInput(){
   document.getElementById('screen-results').style.display='none';
+  document.getElementById('screen-review').style.display='none';
   document.getElementById('screen-input').style.display='block';
+}
+
+function showReview(){
+  // Build lead object from form fields first
+  var name=document.getElementById('in-name').value.trim();
+  if(!name) return;
+  var gv=function(id){var e=document.getElementById(id);return e?e.value.trim():'';};
+
+  document.getElementById('screen-input').style.display='none';
+  document.getElementById('screen-review').style.display='block';
+
+  // Pull all fields for display
+  var fields=[
+    {l:'Customer',    v:gv('in-name')},
+    {l:'Phone',       v:gv('in-phone')},
+    {l:'Email',       v:gv('in-email')},
+    {l:'Source',      v:gv('in-source')},
+    {l:'Vehicle',     v:gv('in-vehicle')},
+    {l:'Trade',       v:gv('in-trade')},
+    {l:'Stock #',     v:gv('in-stock')},
+    {l:'Status',      v:gv('in-status')},
+    {l:'Service Visits', v:gv('in-svc')},
+    {l:'Sales LTV',   v:gv('in-ltv')},
+    {l:'Equity',      v:gv('in-equity')},
+    {l:'Credit Score',v:gv('in-credit')},
+    {l:'VDP Price',   v:gv('in-price')},
+    {l:'Days on Lot', v:gv('in-days')},
+    {l:'Deal Stage',  v:gv('in-dealstage')},
+    {l:'Outreach Stage', v:gv('in-stage')},
+    {l:'Submitted',   v:gv('in-subtime')},
+    {l:'Location',    v:gv('in-location')},
+  ].filter(function(f){return f.v&&f.v.length>0;});
+
+  var notesVal    = gv('in-notes');
+  var custMsgVal  = gv('in-custmsg');
+
+  // Parse intent signals from notes
+  var notesL = notesVal.toLowerCase();
+  var intentChips = [];
+  if(notesL.indexOf('payment: cash')>=0||notesL.indexOf('cash buyer')>=0||notesL.indexOf('cash for vehicle')>=0)
+    intentChips.push({icon:'💵',label:'Cash Buyer',color:'#22C55E'});
+  if(notesL.indexOf('competitor:')>=0){
+    var cn=(notesL.match(/competitor:\s*([\w\s]+?)(?:\s*\||\s*$)/)||[])[1]||'competitor';
+    intentChips.push({icon:'🏁',label:'Competitor: '+cn.trim(),color:'#EF4444'});
+  }
+  if(notesL.indexOf('price anchor:')>=0){
+    var pa=(notesL.match(/price anchor:\s*(\$[\d,]+)/)||[])[1]||'';
+    intentChips.push({icon:'⚡',label:'Price Anchor: '+pa,color:'#F59E0B'});
+  }
+  if(notesL.indexOf('appt at')>=0||notesL.indexOf('appointment at')>=0)
+    intentChips.push({icon:'🚨',label:'Competitor Appt',color:'#EF4444'});
+  if(notesL.indexOf('channel switch')>=0||notesL.indexOf('email only')>=0||notesL.indexOf('prefer by email')>=0)
+    intentChips.push({icon:'📧',label:'Email Only',color:'#4db8ff'});
+  if(notesL.indexOf('budget gap')>=0||notesL.indexOf('budget ceiling')>=0)
+    intentChips.push({icon:'⚠',label:'Budget Gap',color:'#F59E0B'});
+  if(notesL.indexOf('type 1')>=0||notesL.indexOf('type 2')>=0||notesL.indexOf('type 3')>=0||notesL.indexOf('type 4')>=0){
+    var typeM=notesVal.match(/Type [1-4][^\|]{0,60}/);
+    if(typeM) intentChips.push({icon:'📋',label:typeM[0].trim().slice(0,50),color:'#c084fc'});
+  }
+  if(notesL.indexOf('trim:')>=0){
+    var tm=(notesL.match(/trim:\s*([\w\s-]+?)(?:\s*\||\s*$)/)||[])[1]||'';
+    if(tm) intentChips.push({icon:'🎯',label:'Trim: '+tm.trim().toUpperCase(),color:'#A855F7'});
+  }
+  if(notesL.indexOf('color:')>=0){
+    var cl=(notesL.match(/color:\s*([\w\s]+?)(?:\s*\||\s*$)/)||[])[1]||'';
+    if(cl) intentChips.push({icon:'🎨',label:cl.trim(),color:'#64748B'});
+  }
+
+  var html='';
+
+  // Header
+  html+='<div style="font-size:22px;font-weight:800;color:#fff;margin-bottom:4px;">'+gv('in-name')+'</div>';
+  html+='<div style="font-size:12px;color:#64748B;margin-bottom:18px;">Review captured data before running analysis</div>';
+
+  // Intent chips row
+  if(intentChips.length>0){
+    html+='<div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:18px;">';
+    intentChips.forEach(function(c){
+      html+='<div style="background:'+c.color+'18;border:1px solid '+c.color+'44;border-radius:20px;padding:4px 12px;font-size:11px;font-weight:700;color:'+c.color+';">'+c.icon+' '+c.label+'</div>';
+    });
+    html+='</div>';
+  }
+
+  // Two column grid of fields
+  html+='<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:18px;">';
+  fields.forEach(function(f){
+    html+='<div style="background:#0B1120;border:1px solid #1E293B;border-radius:7px;padding:8px 12px;">'
+      +'<div style="font-size:9px;font-weight:700;color:#475569;text-transform:uppercase;letter-spacing:.7px;margin-bottom:2px;">'+f.l+'</div>'
+      +'<div style="font-size:12px;color:#E2E8F0;">'+f.v+'</div>'
+      +'</div>';
+  });
+  html+='</div>';
+
+  // Customer message
+  if(custMsgVal){
+    html+='<div style="background:#0B1120;border:1px solid #1E293B;border-radius:7px;padding:10px 12px;margin-bottom:10px;">'
+      +'<div style="font-size:9px;font-weight:700;color:#475569;text-transform:uppercase;letter-spacing:.7px;margin-bottom:4px;">Customer Said</div>'
+      +'<div style="font-size:12px;color:#CBD5E1;font-style:italic;">“'+custMsgVal+'”</div>'
+      +'</div>';
+  }
+
+  // Notes / context
+  if(notesVal){
+    html+='<div style="background:#0B1120;border:1px solid #1E293B;border-radius:7px;padding:10px 12px;margin-bottom:10px;">'
+      +'<div style="font-size:9px;font-weight:700;color:#475569;text-transform:uppercase;letter-spacing:.7px;margin-bottom:4px;">Notes / Sub-source / Context</div>'
+      +'<div style="font-size:11px;color:#94A3B8;line-height:1.6;white-space:pre-wrap;max-height:140px;overflow-y:auto;">'+notesVal+'</div>'
+      +'</div>';
+  }
+
+  document.getElementById('review-data').innerHTML=html;
 }
 
 // ── URL PARAMS (from Chrome extension) ──────────────────────
@@ -1099,24 +1248,23 @@ function backToInput(){
   if(document.getElementById('in-custmsg'))  document.getElementById('in-custmsg').value=p.get('customerMsg')||'';
   if(document.getElementById('in-similar'))  document.getElementById('in-similar').value=p.get('similarUnits')||'';
   if(document.getElementById('in-dealstage'))document.getElementById('in-dealstage').value=p.get('dealStage')||'';
+  // Salesperson name — used in signatures
+  if(p.get('salesperson')) window._salesperson = p.get('salesperson');
+  if(p.get('deskManager')) window._deskManager = p.get('deskManager');
   // Social profile lookup removed
-  // Auto-run when launched from extension
+  // When launched from extension — fill fields and show REVIEW screen (not auto-run)
   if(p.get('autorun')==='1'&&p.get('name')) {
-    // Try at 800ms, then again at 2000ms as fallback
     setTimeout(function(){
       var n=document.getElementById('in-name').value.trim();
-      var v=document.getElementById('in-vehicle').value.trim();
-      if(n) runAnalysis();
-    }, 800);
-    setTimeout(function(){
-      // Fallback if first attempt failed
-      if(document.getElementById('screen-input').style.display!=='none'){
-        var n=document.getElementById('in-name').value.trim();
-        if(n) runAnalysis();
-      }
-    }, 2200);
+      if(n) showReview();
+    }, 400);
   }
 })();
 </script>
 </body>
 </html>
+
+  // Intent Profile block
+  if(LEAD.intentSummary&&LEAD.intentSummary!=='Standard internet buyer'){
+    html+='<div style="background:#A855F715;border:1px solid #A855F740;border-radius:6px;padding:7px 9px;margin-top:6px;"><div style="font-size:9px;font-weight:700;color:#A855F7;text-transform:uppercase;letter-spacing:.5px;margin-bottom:3px;">\uD83E\uDDE0 Intent Profile</div><div style="font-size:10px;color:#CBD5E1;line-height:1.5;">'+LEAD.intentSummary+'</div></div>';
+  }

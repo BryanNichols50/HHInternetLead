@@ -160,34 +160,17 @@ body{font-family:'IBM Plex Sans',sans-serif;background:var(--bg);color:var(--tex
   </div>
   <button class="run-btn" onclick="runAnalysis()">&#9889; Analyze Lead</button>
 </div>
-<div id="screen-review" style="display:none;background:#06080F;min-height:100vh;">
-  <div style="background:linear-gradient(135deg,#00355A,#00558C);padding:12px 20px;display:flex;align-items:center;gap:12px;border-bottom:1px solid rgba(255,255,255,.1);position:sticky;top:0;z-index:100;">
-    <div style="width:32px;height:32px;border-radius:6px;background:#fff;display:flex;align-items:center;justify-content:center;font-weight:900;color:#00558C;font-size:14px;">H</div>
-    <div>
-      <div style="font-size:15px;font-weight:800;color:#fff;">Lead Intel Review</div>
-      <div style="font-size:10px;color:rgba(255,255,255,.55);letter-spacing:1px;text-transform:uppercase;">Confirm data before analysis</div>
-    </div>
-    <button onclick="backToInput()" style="margin-left:auto;background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.2);color:rgba(255,255,255,.7);padding:5px 14px;border-radius:20px;font-family:inherit;font-size:11px;cursor:pointer;">← Edit</button>
-  </div>
-  <div style="max-width:900px;margin:0 auto;padding:28px 24px 120px;">
-    <div id="review-data"></div>
-  </div>
-  <div style="position:fixed;bottom:0;left:0;right:0;background:linear-gradient(transparent,#06080F 40%);padding:20px 24px 24px;display:flex;gap:10px;max-width:900px;margin:0 auto;">
-    <button onclick="backToInput()" style="flex:1;padding:14px;border:1px solid #1E293B;border-radius:9px;background:#0B1120;color:#64748B;font-family:inherit;font-size:13px;font-weight:700;cursor:pointer;">← Edit Data</button>
-    <button onclick="runAnalysis()" style="flex:3;padding:14px;border:none;border-radius:9px;background:linear-gradient(135deg,#00558C,#0070B8);color:#fff;font-family:inherit;font-size:14px;font-weight:800;cursor:pointer;">⚡ Generate Responses →</button>
-  </div>
-</div>
 <div id="screen-results" style="display:none">
   <div class="layout">
     <div class="panel-left">
       <div class="ptabs" style="display:flex;border-bottom:1px solid #1E293B;flex-shrink:0;">
-        <button class="ptab on" onclick="setLP('intel',this)" style="flex:1;padding:9px 6px;border:none;border-bottom:2px solid var(--blue2);background:transparent;color:#E2E8F0;font-family:inherit;font-size:10px;font-weight:700;cursor:pointer;text-transform:uppercase;letter-spacing:.4px;">📋 Intel</button>
+        <button class="ptab" onclick="setLP('intel',this)" style="flex:1;padding:9px 6px;border:none;border-bottom:2px solid transparent;background:transparent;color:#64748B;font-family:inherit;font-size:10px;font-weight:700;cursor:pointer;text-transform:uppercase;letter-spacing:.4px;">📋 Intel</button>
         <button class="ptab" onclick="setLP('brief',this)" style="flex:1;padding:9px 6px;border:none;border-bottom:2px solid transparent;background:transparent;color:#64748B;font-family:inherit;font-size:10px;font-weight:700;cursor:pointer;text-transform:uppercase;letter-spacing:.4px;">🧠 Brief</button>
-        <button class="ptab" onclick="setLP('notes',this)" style="flex:1;padding:9px 6px;border:none;border-bottom:2px solid transparent;background:transparent;color:#64748B;font-family:inherit;font-size:10px;font-weight:700;cursor:pointer;text-transform:uppercase;letter-spacing:.4px;">📝 Notes</button>
+        <button class="ptab on" onclick="setLP('notes',this)" style="flex:1;padding:9px 6px;border:none;border-bottom:2px solid var(--blue2);background:transparent;color:#E2E8F0;font-family:inherit;font-size:10px;font-weight:700;cursor:pointer;text-transform:uppercase;letter-spacing:.4px;">📝 Notes</button>
       </div>
-      <div class="pscroll" id="lp-intel"></div>
+      <div class="pscroll" id="lp-intel" style="display:none;"></div>
       <div class="pscroll" id="lp-brief" style="display:none;"></div>
-      <div class="pscroll" id="lp-notes" style="display:none;"></div>
+      <div class="pscroll" id="lp-notes"></div>
     </div>
     <div class="panel-right" id="right-panel"></div>
   </div>
@@ -877,7 +860,6 @@ function runAnalysis(){
   var paths=buildMultiPaths(LEAD,mbs,trans,sensory,suffering,voss);
   RESULT={templates:tmpl,paths:paths,mbs:mbs,transplant:trans,score:sr.score,reasons:sr.reasons,suffering:suffering,voss:voss,sensory:sensory};
   document.getElementById('screen-input').style.display='none';
-  document.getElementById('screen-review').style.display='none';
   document.getElementById('screen-results').style.display='block';
   renderLeft();
   renderBrief();
@@ -917,89 +899,168 @@ function renderLeft(){
 function ir(l,v){return'<div class="irow"><div class="ilabel">'+l+'</div><div class="ivalue">'+v+'</div></div>';}
 
 function renderNotes(){
-  var html='';
-  var notes=LEAD.notes||'';
-  var notesL=notes.toLowerCase();
+  var mbs   = RESULT.mbs;
+  var mbc   = MBC[mbs.color]||'#64748B';
+  var T     = RESULT.templates;
+  var score = RESULT.score;
+  var col   = sc(score);
+  var fn    = LEAD.firstName || LEAD.name.split(' ')[0];
+  var notes = LEAD.notes || '';
+  var notesL = notes.toLowerCase();
+  var html  = '';
 
-  // ── LIFETIME VALUE ─────────────────────────────────────────
-  var hasLTV=LEAD.ltv||LEAD.svcVisits||LEAD.svc;
-  if(hasLTV){
-    html+='<div style="background:#0a0f1a;border:1px solid #1E293B;border-radius:8px;padding:9px 11px;margin-bottom:8px;">';
-    html+='<div style="font-size:9px;font-weight:700;color:#64748B;text-transform:uppercase;letter-spacing:.8px;margin-bottom:6px;">💰 Lifetime Value</div>';
-    html+='<div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;">';
-    if(LEAD.ltv)     html+='<div><div style="font-size:8px;color:#475569;text-transform:uppercase;">Sales LTV</div><div style="font-size:12px;font-weight:700;color:#22C55E;">'+LEAD.ltv+'</div></div>';
-    if(LEAD.svcVisits||LEAD.svc) html+='<div><div style="font-size:8px;color:#475569;text-transform:uppercase;">Svc Visits</div><div style="font-size:12px;font-weight:700;color:#4db8ff;">'+(LEAD.svcVisits||LEAD.svc)+'</div></div>';
-    html+='</div>';
-    html+='</div>';
+  function card(icon, title, color, body) {
+    return '<div style="background:#0a0f1a;border-left:3px solid '+color+';border-radius:0 7px 7px 0;padding:9px 12px;margin-bottom:8px;">'
+      + '<div style="font-size:9px;font-weight:800;color:'+color+';text-transform:uppercase;letter-spacing:.8px;margin-bottom:4px;">'+icon+' '+title+'</div>'
+      + '<div style="font-size:11px;color:#CBD5E1;line-height:1.6;">'+body+'</div>'
+      + '</div>';
   }
 
-  // ── COMMUNICATION THREAD ──────────────────────────────────
-  var commsHistory=LEAD.commsHistory||[];
-  var actNotes=[];
+  // ── HEADER: WHO + SCORE ───────────────────────────────────
+  html += '<div style="background:#0B1120;border:1px solid #1E293B;border-radius:8px;padding:10px 12px;margin-bottom:10px;">';
+  html += '<div style="display:flex;align-items:center;gap:10px;">';
+  html += '<div style="width:44px;height:44px;border-radius:50%;border:3px solid '+col+';display:flex;flex-direction:column;align-items:center;justify-content:center;flex-shrink:0;">';
+  html += '<div style="font-size:16px;font-weight:900;color:'+col+';line-height:1;">'+score+'</div>';
+  html += '</div>';
+  html += '<div>';
+  html += '<div style="font-size:14px;font-weight:800;color:#fff;">'+LEAD.name+'</div>';
+  html += '<div style="font-size:10px;color:#64748B;margin-top:2px;">'+( LEAD.vehicle||'')+(LEAD.source?' · '+LEAD.source:'')+(LEAD.status?' · '+LEAD.status:'')+'</div>';
+  html += '</div>';
+  html += '<div style="margin-left:auto;background:'+mbc+'18;border:1px solid '+mbc+'44;border-radius:20px;padding:3px 10px;font-size:10px;font-weight:800;color:'+mbc+';">'+mbs.profile+'</div>';
+  html += '</div>';
+  html += '</div>';
 
-  // Pull note/text entries from comms history
-  commsHistory.forEach(function(c){
-    if(c.comment&&c.comment.length>3&&
-       !c.comment.startsWith('http')&&
-       !c.comment.includes('crmaiva.ai')&&
-       !c.comment.includes('carwars.com')) {
-      actNotes.push(c);
-    }
-  });
+  // ── CRITICAL FLAGS FIRST ──────────────────────────────────
+  var critFlags = LEAD.criticalFlags || [];
+  // Also pull from notes
+  if (notesL.indexOf('channel switch') >= 0 || notesL.indexOf('email only') >= 0)
+    critFlags = [{ icon:'🚨', label:'Email Only — Do Not Call or Text', detail:'Customer set explicit channel preference. All contact via email.', color:'#f44336' }].concat(critFlags);
+  if (notesL.indexOf('appt at') >= 0 || notesL.indexOf('appointment at') >= 0)
+    critFlags = [{ icon:'⏰', label:'Competitor Appointment', detail:'Customer has or had an appointment at a competitor. Move fast.', color:'#EF4444' }].concat(critFlags);
+  if (notesL.indexOf('human takeover') >= 0)
+    critFlags = [{ icon:'🚨', label:'Human Takeover Required', detail:'AI protocol stops. Named human responds immediately.', color:'#f44336' }].concat(critFlags);
 
-  // Also parse from raw notes field
-  if(notes.indexOf('TRANSCRIPT:')>=0){
-    var transcript=notes.slice(notes.indexOf('TRANSCRIPT:')+11,notes.indexOf('TRANSCRIPT:')+600);
-    if(transcript){
-      html+='<div style="background:#0a0f1a;border:1px solid #1E293B;border-radius:8px;padding:9px 11px;margin-bottom:8px;">';
-      html+='<div style="font-size:9px;font-weight:700;color:#64748B;text-transform:uppercase;letter-spacing:.8px;margin-bottom:6px;">💬 Chat Transcript</div>';
-      html+='<div style="font-size:10px;color:#94A3B8;line-height:1.6;white-space:pre-wrap;">'+transcript.replace(/[|]/g,'\n').trim()+'</div>';
-      html+='</div>';
-    }
-  }
-
-  if(actNotes.length>0){
-    html+='<div style="background:#0a0f1a;border:1px solid #1E293B;border-radius:8px;padding:9px 11px;margin-bottom:8px;">';
-    html+='<div style="font-size:9px;font-weight:700;color:#64748B;text-transform:uppercase;letter-spacing:.8px;margin-bottom:6px;">📝 Activity Notes</div>';
-    actNotes.forEach(function(c){
-      var isInbound=c.outcome==='Customer Replied'||c.outcome==='Received';
-      var oc=isInbound?'#22C55E':c.outcome==='No Answer / VM'?'#EF4444':'#475569';
-      html+='<div style="padding:5px 0;border-bottom:1px solid #0f1520;">';
-      html+='<div style="display:flex;align-items:center;gap:6px;margin-bottom:2px;">';
-      html+='<span style="font-size:8px;font-weight:700;color:'+oc+';">'+c.outcome+'</span>';
-      html+='<span style="font-size:8px;color:#334155;">'+c.date+'</span>';
-      if(c.assignee) html+='<span style="font-size:8px;color:#334155;">· '+c.assignee+'</span>';
-      html+='</div>';
-      html+='<div style="font-size:11px;color:'+(isInbound?'#E2E8F0':'#94A3B8')+';line-height:1.4;'+(isInbound?'font-style:italic;':'')+'">'+
-        (isInbound?'&ldquo;':'')+c.comment+(isInbound?'&rdquo;':'')+
-      '</div>';
-      html+='</div>';
+  if (critFlags.length > 0) {
+    critFlags.slice(0,3).forEach(function(f){
+      html += '<div style="background:'+f.color+'15;border:2px solid '+f.color+'55;border-radius:7px;padding:8px 11px;margin-bottom:6px;">';
+      html += '<div style="font-size:11px;font-weight:800;color:'+f.color+';">'+f.icon+' '+f.label+'</div>';
+      html += '<div style="font-size:10px;color:#94A3B8;margin-top:2px;">'+f.detail+'</div>';
+      html += '</div>';
     });
-    html+='</div>';
   }
 
-  // ── CONTEXT FROM NOTES FIELD ──────────────────────────────
-  // Show any non-system intent signals pulled from notes
-  var intentParts=[];
-  if(notesL.indexOf('competitor:')>=0){var cn=(notes.match(/Competitor:\s*([\w\s]+?)(?:\s*\||\s*$)/i)||[])[1];if(cn)intentParts.push('Competitor: '+cn.trim());}
-  if(notesL.indexOf('price anchor:')>=0){var pa=(notes.match(/Price anchor:\s*(\$[\d,]+)/i)||[])[1];if(pa)intentParts.push('Price anchor: '+pa);}
-  if(notesL.indexOf('payment: cash')>=0) intentParts.push('Cash buyer');
-  if(notesL.indexOf('trim:')>=0){var tm=(notes.match(/Trim:\s*([\w\s-]+?)(?:\s*\||\s*$)/i)||[])[1];if(tm)intentParts.push('Trim: '+tm.trim());}
-  if(notesL.indexOf('appt at')>=0){var ap=(notes.match(/APPT at\s*([\w\s]+?)(?:\s*—|\s*\||\s*$)/i)||[])[1];if(ap)intentParts.push('Appt at: '+ap.trim());}
-  if(notesL.indexOf('channel switch:')>=0){var ch=(notes.match(/CHANNEL SWITCH:\s*([\w\s]+?)(?:\s*\||\s*$)/i)||[])[1];if(ch)intentParts.push('Contact: '+ch.trim());}
+  // ── WHO THIS PERSON IS ────────────────────────────────────
+  html += card('👤','Who This Person Is', mbc,
+    '<strong style="color:'+mbc+'">'+mbs.profile+' ('+mbs.color+')</strong> — '+mbs.reason
+    + '<br><br><strong>Need:</strong> '
+    + (mbs.color==='Green'?'Belonging — to feel known, valued, not processed.'
+      :mbs.color==='Yellow'?'Competence — to feel they made the right choice.'
+      :mbs.color==='Blue'?'Security — no surprises, no hidden costs, no pressure.'
+      :'Control — speed, respect for their time, bottom-line first.')
+    + '<br><strong>Fear:</strong> '
+    + (mbs.color==='Green'?'Being forgotten after the sale. Just a number.'
+      :mbs.color==='Yellow'?'Buyer remorse. Missing something. Being uninformed.'
+      :mbs.color==='Blue'?'Judgment, rejection, financial exposure, hidden costs.'
+      :'Being manipulated. Wasting time. Losing control of the deal.')
+  );
 
-  if(intentParts.length>0){
-    html+='<div style="background:#0a0f1a;border:1px solid #1E293B;border-radius:8px;padding:9px 11px;margin-bottom:8px;">';
-    html+='<div style="font-size:9px;font-weight:700;color:#64748B;text-transform:uppercase;letter-spacing:.8px;margin-bottom:6px;">🧠 Inferred Intel</div>';
-    intentParts.forEach(function(p){
-      html+='<div style="font-size:11px;color:#CBD5E1;padding:2px 0;">• '+p+'</div>';
-    });
-    html+='</div>';
+  // ── WHAT IS DRIVING THIS ──────────────────────────────────
+  html += card('💢','What Is Driving This', '#EC4899', RESULT.suffering);
+
+  // ── LEAD TYPE + RULES ─────────────────────────────────────
+  var ltMatch = notes.match(/Type [1-4][^\|]{0,80}/);
+  var stratMatch = notes.match(/Strategy:\s*([^\|]{20,200})/i);
+  var rulesRaw = notes.match(/(?:rules?|⚡)[:\s]+([^\|]{20,300})/gi);
+  if (ltMatch || stratMatch) {
+    var ltBody = '';
+    if (ltMatch)    ltBody += '<strong style="color:#c084fc;">'+ltMatch[0].trim().slice(0,70)+'</strong>';
+    if (stratMatch) ltBody += '<br><br>'+stratMatch[1].trim();
+    if (rulesRaw)   ltBody += '<br><br>' + rulesRaw.map(function(r){ return '⚡ '+r.replace(/^(?:rules?|⚡)[:\s]+/i,'').trim(); }).join('<br>');
+    html += card('📋','Lead Type Strategy', '#c084fc', ltBody);
   }
 
-  if(!html) html='<div style="font-size:11px;color:#475569;padding:8px;">No notes or activity captured yet.</div>';
+  // ── INTENT SIGNALS ────────────────────────────────────────
+  var intentParts = [];
+  if (notesL.indexOf('payment: cash')>=0||notesL.indexOf('cash buyer')>=0) intentParts.push('<strong style="color:#22C55E">💵 Cash buyer</strong> — skip financing talk, lead with OTD');
+  var pa = (notes.match(/Price anchor:\s*(\$[\d,]+)/i)||[])[1];
+  if (pa) intentParts.push('<strong style="color:#F59E0B">⚡ Price anchor: '+pa+'</strong> — customer has this number in mind, address it');
+  var cn = (notes.match(/Competitor:\s*([\w\s]+?)(?:\s*\||\s*$)/i)||[])[1];
+  if (cn) intentParts.push('<strong style="color:#EF4444">🏁 Competitor: '+cn.trim()+'</strong>');
+  var tm = (notes.match(/Trim:\s*([\w\s-]+?)(?:\s*\||\s*$)/i)||[])[1];
+  if (tm) intentParts.push('🎯 Trim preference: <strong>'+tm.trim().toUpperCase()+'</strong>');
+  var co = (notes.match(/Color:\s*([\w\s]+?)(?:\s*\||\s*$)/i)||[])[1];
+  if (co) intentParts.push('🎨 Color: <strong>'+co.trim()+'</strong>');
+  var tn = (notes.match(/Trade \(notes\):\s*([^\|]+)/i)||[])[1];
+  if (tn) intentParts.push('🔄 Trade from notes: <strong>'+tn.trim()+'</strong>');
+  var cs = (notes.match(/CHANNEL SWITCH:\s*([\w\s]+?)(?:\s*\||\s*$)/i)||[])[1];
+  if (cs) intentParts.push('📧 Contact: <strong>'+cs.trim()+' only</strong>');
+  // Budget gap
+  var bg = (notes.match(/BUDGET GAP:\s*([^\|]+)/i)||[])[1];
+  if (bg) intentParts.push('<strong style="color:#F59E0B">⚠ Budget gap: '+bg.trim()+'</strong> — lead with payment not MSRP');
+  // ADF budget
+  var bp = (notes.match(/ADF Purchase Price:\s*([^\|]+)/i)||[])[1];
+  var bc = (notes.match(/Budget Ceiling:\s*([^\|]+)/i)||[])[1];
+  if (bp||bc) intentParts.push('💰 Budget: '+(bp?'Target '+bp.trim():'')+(bc?' / Ceiling '+bc.trim():''));
+  // Comms stage
+  if (LEAD.commsStage && LEAD.commsStage !== 'No outreach recorded')
+    intentParts.push('📡 Outreach: <strong>'+LEAD.commsStage+'</strong>');
+  // Customer message
+  if (LEAD.customerMsg && LEAD.customerMsg.length > 5)
+    intentParts.push('💬 Customer said: <em style="color:#E2E8F0">"'+LEAD.customerMsg.slice(0,120)+'"</em>');
 
-  document.getElementById('lp-notes').innerHTML=html;
+  if (intentParts.length > 0) {
+    html += card('🧠','Intel From Notes', '#A855F7', intentParts.join('<br>'));
+  }
+
+  // ── HOW TO RESPOND ────────────────────────────────────────
+  var howTo = '';
+  howTo += '<strong>Voss technique:</strong> '+RESULT.voss+'<br><br>';
+  howTo += '<strong>Tone:</strong> '
+    + (mbs.color==='Green'?'Warm, personal. Use their name. Make them feel known — not processed.'
+      :mbs.color==='Yellow'?'Detail-rich, low pressure. Validate their research. Earn trust through competence.'
+      :mbs.color==='Blue'?'Reassuring, transparent. No pressure, no surprises. Remove every risk signal.'
+      :'Direct, zero fluff. Bottom line first. Respect their time.')
+    + '<br><br>';
+  if (T && T.fic) {
+    howTo += '<strong>Open with:</strong> '+T.fic.f+'<br>';
+    howTo += '<strong>Lead with:</strong> '+T.fic.i+'<br>';
+    howTo += '<strong>Close with:</strong> '+T.fic.c;
+  }
+  html += card('⚡','How to Respond', '#22C55E', howTo);
+
+  // ── TRANSPLANT ────────────────────────────────────────────
+  if (RESULT.transplant) {
+    var tc = RESULT.transplant.military ? '#F59E0B' : '#A855F7';
+    var tBody = RESULT.transplant.military
+      ? 'Fayetteville/Fort Liberty area code. Ask if stationed there or local. Mention Honda military incentive eligibility.'
+      : RESULT.transplant.instate
+      ? RESULT.transplant.city+' area code (in-state). Ask if making the drive to Charlotte.'
+      : 'Non-local area code ('+RESULT.transplant.city+'). Ask naturally: "Are you local to Charlotte or still in '+RESULT.transplant.city.split('/')[0]+'?" — do not assume out-of-state.';
+    html += card('🌎','Location Check', tc, tBody);
+  }
+
+  // ── CRM NOTE ─────────────────────────────────────────────
+  if (T && T.followups && T.followups.crmNote) {
+    html += '<div style="background:#060a10;border:1px solid #1a2a1a;border-radius:7px;padding:8px 11px;margin-bottom:8px;">';
+    html += '<div style="font-size:9px;font-weight:700;color:#4caf50;text-transform:uppercase;letter-spacing:.7px;margin-bottom:5px;">📝 CRM Log Note</div>';
+    html += '<div style="font-size:10px;color:#64748B;font-family:monospace;line-height:1.7;">'+T.followups.crmNote+'</div>';
+    html += '<button onclick="event.stopPropagation();doCopy(\'crm-exec\')" style="margin-top:6px;padding:4px 12px;border-radius:4px;border:none;background:#0070B8;color:#fff;font-family:inherit;font-size:10px;font-weight:700;cursor:pointer;">Copy CRM Note</button>';
+    _msgStore['crm-exec'] = T.followups.crmNote;
+    html += '<div style="display:none;" id="crm-exec-text">'+T.followups.crmNote+'</div>';
+    html += '</div>';
+  }
+
+  // ── LTV SUMMARY ───────────────────────────────────────────
+  var hasLTV = LEAD.ltv || LEAD.svcVisits || LEAD.svc;
+  if (hasLTV) {
+    var ltvBody = '';
+    if (LEAD.ltv) ltvBody += '<strong style="color:#22C55E">Sales LTV: '+LEAD.ltv+'</strong>';
+    if (LEAD.svcVisits||LEAD.svc) ltvBody += (ltvBody?' &nbsp;·&nbsp; ':'')+'<strong style="color:#4db8ff">'+( LEAD.svcVisits||LEAD.svc)+' service visits</strong>';
+    if (LEAD.equity) ltvBody += '<br>Equity: '+LEAD.equity;
+    html += card('💰','Customer Value', '#22C55E', ltvBody);
+  }
+
+  document.getElementById('lp-notes').innerHTML = html;
 }
 
 function renderBrief(){
@@ -1026,7 +1087,7 @@ function renderBrief(){
   var needFear=mbs.color==='Green'
     ?'<strong>Need:</strong> To feel known and valued as a person — not processed. <strong>Fear:</strong> Being treated as just another number, forgotten after the sale.'
     :mbs.color==='Yellow'
-    ?'<strong>Need:</strong> Competence and accuracy — to feel they made the objectively right choice. <strong>Fear:</strong> Buyer remorse, missing something, being uninformed.'
+    ?'<strong>Need:</strong> Competence and accuracy — to feel they made the right choice. <strong>Fear:</strong> Buyer remorse, missing something, being uninformed.'
     :mbs.color==='Blue'
     ?'<strong>Need:</strong> Security and predictability — no surprises, no hidden costs. <strong>Fear:</strong> Rejection, judgment, financial exposure, being embarrassed.'
     :'<strong>Need:</strong> Control, speed, and significance — to feel respected and in charge. <strong>Fear:</strong> Being manipulated, wasting time, losing control of the process.';
@@ -1191,163 +1252,7 @@ function setRT(tab,el){
 function setFU(mode){fuMode=mode;selFT=null;selFE=null;renderRC('followup');}
 function backToInput(){
   document.getElementById('screen-results').style.display='none';
-  document.getElementById('screen-review').style.display='none';
   document.getElementById('screen-input').style.display='block';
 }
 
-function showReview(){
-  // Build lead object from form fields first
-  var name=document.getElementById('in-name').value.trim();
-  if(!name) return;
-  var gv=function(id){var e=document.getElementById(id);return e?e.value.trim():'';};
-
-  document.getElementById('screen-input').style.display='none';
-  document.getElementById('screen-review').style.display='block';
-
-  // Pull all fields for display
-  var fields=[
-    {l:'Customer',    v:gv('in-name')},
-    {l:'Phone',       v:gv('in-phone')},
-    {l:'Email',       v:gv('in-email')},
-    {l:'Source',      v:gv('in-source')},
-    {l:'Vehicle',     v:gv('in-vehicle')},
-    {l:'Trade',       v:gv('in-trade')},
-    {l:'Stock #',     v:gv('in-stock')},
-    {l:'Status',      v:gv('in-status')},
-    {l:'Service Visits', v:gv('in-svc')},
-    {l:'Sales LTV',   v:gv('in-ltv')},
-    {l:'Equity',      v:gv('in-equity')},
-    {l:'Credit Score',v:gv('in-credit')},
-    {l:'VDP Price',   v:gv('in-price')},
-    {l:'Days on Lot', v:gv('in-days')},
-    {l:'Deal Stage',  v:gv('in-dealstage')},
-    {l:'Outreach Stage', v:gv('in-stage')},
-    {l:'Submitted',   v:gv('in-subtime')},
-    {l:'Location',    v:gv('in-location')},
-  ].filter(function(f){return f.v&&f.v.length>0;});
-
-  var notesVal    = gv('in-notes');
-  var custMsgVal  = gv('in-custmsg');
-
-  // Parse intent signals from notes
-  var notesL = notesVal.toLowerCase();
-  var intentChips = [];
-  if(notesL.indexOf('payment: cash')>=0||notesL.indexOf('cash buyer')>=0||notesL.indexOf('cash for vehicle')>=0)
-    intentChips.push({icon:'💵',label:'Cash Buyer',color:'#22C55E'});
-  if(notesL.indexOf('competitor:')>=0){
-    var cn=(notesL.match(/competitor:\s*([\w\s]+?)(?:\s*\||\s*$)/)||[])[1]||'competitor';
-    intentChips.push({icon:'🏁',label:'Competitor: '+cn.trim(),color:'#EF4444'});
-  }
-  if(notesL.indexOf('price anchor:')>=0){
-    var pa=(notesL.match(/price anchor:\s*(\$[\d,]+)/)||[])[1]||'';
-    intentChips.push({icon:'⚡',label:'Price Anchor: '+pa,color:'#F59E0B'});
-  }
-  if(notesL.indexOf('appt at')>=0||notesL.indexOf('appointment at')>=0)
-    intentChips.push({icon:'🚨',label:'Competitor Appt',color:'#EF4444'});
-  if(notesL.indexOf('channel switch')>=0||notesL.indexOf('email only')>=0||notesL.indexOf('prefer by email')>=0)
-    intentChips.push({icon:'📧',label:'Email Only',color:'#4db8ff'});
-  if(notesL.indexOf('budget gap')>=0||notesL.indexOf('budget ceiling')>=0)
-    intentChips.push({icon:'⚠',label:'Budget Gap',color:'#F59E0B'});
-  if(notesL.indexOf('type 1')>=0||notesL.indexOf('type 2')>=0||notesL.indexOf('type 3')>=0||notesL.indexOf('type 4')>=0){
-    var typeM=notesVal.match(/Type [1-4][^\|]{0,60}/);
-    if(typeM) intentChips.push({icon:'📋',label:typeM[0].trim().slice(0,50),color:'#c084fc'});
-  }
-  if(notesL.indexOf('trim:')>=0){
-    var tm=(notesL.match(/trim:\s*([\w\s-]+?)(?:\s*\||\s*$)/)||[])[1]||'';
-    if(tm) intentChips.push({icon:'🎯',label:'Trim: '+tm.trim().toUpperCase(),color:'#A855F7'});
-  }
-  if(notesL.indexOf('color:')>=0){
-    var cl=(notesL.match(/color:\s*([\w\s]+?)(?:\s*\||\s*$)/)||[])[1]||'';
-    if(cl) intentChips.push({icon:'🎨',label:cl.trim(),color:'#64748B'});
-  }
-
-  var html='';
-
-  // Header
-  html+='<div style="font-size:22px;font-weight:800;color:#fff;margin-bottom:4px;">'+gv('in-name')+'</div>';
-  html+='<div style="font-size:12px;color:#64748B;margin-bottom:18px;">Review captured data before running analysis</div>';
-
-  // Intent chips row
-  if(intentChips.length>0){
-    html+='<div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:18px;">';
-    intentChips.forEach(function(c){
-      html+='<div style="background:'+c.color+'18;border:1px solid '+c.color+'44;border-radius:20px;padding:4px 12px;font-size:11px;font-weight:700;color:'+c.color+';">'+c.icon+' '+c.label+'</div>';
-    });
-    html+='</div>';
-  }
-
-  // Two column grid of fields
-  html+='<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:18px;">';
-  fields.forEach(function(f){
-    html+='<div style="background:#0B1120;border:1px solid #1E293B;border-radius:7px;padding:8px 12px;">'
-      +'<div style="font-size:9px;font-weight:700;color:#475569;text-transform:uppercase;letter-spacing:.7px;margin-bottom:2px;">'+f.l+'</div>'
-      +'<div style="font-size:12px;color:#E2E8F0;">'+f.v+'</div>'
-      +'</div>';
-  });
-  html+='</div>';
-
-  // Customer message
-  if(custMsgVal){
-    html+='<div style="background:#0B1120;border:1px solid #1E293B;border-radius:7px;padding:10px 12px;margin-bottom:10px;">'
-      +'<div style="font-size:9px;font-weight:700;color:#475569;text-transform:uppercase;letter-spacing:.7px;margin-bottom:4px;">Customer Said</div>'
-      +'<div style="font-size:12px;color:#CBD5E1;font-style:italic;">“'+custMsgVal+'”</div>'
-      +'</div>';
-  }
-
-  // Notes / context
-  if(notesVal){
-    html+='<div style="background:#0B1120;border:1px solid #1E293B;border-radius:7px;padding:10px 12px;margin-bottom:10px;">'
-      +'<div style="font-size:9px;font-weight:700;color:#475569;text-transform:uppercase;letter-spacing:.7px;margin-bottom:4px;">Notes / Sub-source / Context</div>'
-      +'<div style="font-size:11px;color:#94A3B8;line-height:1.6;white-space:pre-wrap;max-height:140px;overflow-y:auto;">'+notesVal+'</div>'
-      +'</div>';
-  }
-
-  document.getElementById('review-data').innerHTML=html;
-}
-
-// ── URL PARAMS (from Chrome extension) ──────────────────────
-(function(){
-  var p=new URLSearchParams(window.location.search);
-  if(!p.get('name'))return;
-  document.getElementById('in-name').value=p.get('name')||'';
-  document.getElementById('in-phone').value=p.get('phone')||'';
-  document.getElementById('in-email').value=p.get('email')||'';
-  document.getElementById('in-source').value=p.get('source')||'';
-  document.getElementById('in-vehicle').value=p.get('vehicle')||'';
-  document.getElementById('in-trade').value=p.get('trade')||'';
-  document.getElementById('in-stock').value=p.get('stock')||'';
-  document.getElementById('in-status').value=p.get('status')||'Uncontacted';
-  document.getElementById('in-svc').value=p.get('svcVisits')||'';
-  document.getElementById('in-ltv').value=p.get('ltv')||'';
-  document.getElementById('in-equity').value=p.get('equity')||'';
-  document.getElementById('in-location').value=p.get('location')||'';
-  document.getElementById('in-notes').value=p.get('notes')||'';
-  // New fields from v2 extension
-  if(document.getElementById('in-credit'))   document.getElementById('in-credit').value=p.get('creditScore')||'';
-  if(document.getElementById('in-price'))    document.getElementById('in-price').value=p.get('vdpPrice')||'';
-  if(document.getElementById('in-days'))     document.getElementById('in-days').value=p.get('daysOnLot')||'';
-  if(document.getElementById('in-stage'))    document.getElementById('in-stage').value=p.get('commsStage')||'';
-  if(document.getElementById('in-subtime'))  document.getElementById('in-subtime').value=p.get('submissionTime')||'';
-  if(document.getElementById('in-custmsg'))  document.getElementById('in-custmsg').value=p.get('customerMsg')||'';
-  if(document.getElementById('in-similar'))  document.getElementById('in-similar').value=p.get('similarUnits')||'';
-  if(document.getElementById('in-dealstage'))document.getElementById('in-dealstage').value=p.get('dealStage')||'';
-  // Salesperson name — used in signatures
-  if(p.get('salesperson')) window._salesperson = p.get('salesperson');
-  if(p.get('deskManager')) window._deskManager = p.get('deskManager');
-  // Social profile lookup removed
-  // When launched from extension — fill fields and show REVIEW screen (not auto-run)
-  if(p.get('autorun')==='1'&&p.get('name')) {
-    setTimeout(function(){
-      var n=document.getElementById('in-name').value.trim();
-      if(n) showReview();
-    }, 400);
-  }
-})();
-</script>
-</body>
-</html>
-
-  // Intent Profile block
-  if(LEAD.intentSummary&&LEAD.intentSummary!=='Standard internet buyer'){
-    html+='<div style="background:#A855F715;border:1px solid #A855F740;border-radius:6px;padding:7px 9px;margin-top:6px;"><div style="font-size:9px;font-weight:700;color:#A855F7;text-transform:uppercase;letter-spacing:.5px;margin-bottom:3px;">\uD83E\uDDE0 Intent Profile</div><div style="font-size:10px;color:#CBD5E1;line-height:1.5;">'+LEAD.intentSummary+'</div></div>';
-  }
+>

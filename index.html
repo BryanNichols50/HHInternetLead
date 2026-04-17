@@ -1225,6 +1225,146 @@ function mo(o,key,activeKey,onClick){
   return'<div class="mopt" style="background:'+(on?'#111827':'var(--bg2)')+';border:'+(on?'2px solid '+tc:'1px solid var(--bdr)')+';" onclick="('+onClick.toString()+')(\''+key+'\')"><div class="mopt-hdr"><div class="mopt-left"><div class="opt-radio" style="border-color:'+(on?tc:'var(--bdr2)')+'">'+(on?'<div class="opt-dot" style="background:'+tc+'"></div>':'')+'</div><div><div class="opt-lbl">'+o.label+'</div><div class="opt-tags">'+(o.hughes||[]).map(function(h){return'<span class="htag" style="background:'+(HC[h]||'#64748B')+'22;color:'+(HC[h]||'#64748B')+'">'+h+'</span>';}).join('')+'</div></div></div><span class="ttag" style="background:'+tc+'1A;color:'+tc+'">'+o.tag+'</span></div>'+(on?'<div class="mopt-body">'+(o.subject?'<div class="m-subject">Subject: <span>'+o.subject+'</span></div>':'')+'<div class="m-bubble"><pre>'+safeMsg+'</pre></div><button class="copy-btn" id="cb-'+key+'" onclick="event.stopPropagation();doCopy(\''+key+'\')">Copy</button></div>':'')+'</div>';
 }
 
+function analyzeResponse(key){
+  var msg=_msgStore[key];
+  if(!msg) return;
+  var btn=document.getElementById('ab-'+key);
+  var out=document.getElementById('ar-'+key);
+  if(!btn||!out) return;
+  out.style.display='block';
+  btn.textContent='🧠 Analyzed';
+  btn.style.background='#0a2a0a';
+  btn.style.color='#22C55E';
+
+  var mbs=RESULT.mbs;
+  var fn=LEAD.firstName||LEAD.name.split(' ')[0];
+  var ml=msg.toLowerCase();
+  var notes=(LEAD.notes||'').toLowerCase();
+  var mechanics=[];
+
+  // ── DETECT VOSS TECHNIQUES IN THE MESSAGE ─────────────────
+  // Labeling — "It sounds like" / "I have a feeling"
+  if(/it sounds like|i have a feeling|it seems like|i sense|sounds like you/i.test(msg))
+    mechanics.push({c:'#EC4899',l:'Label',e:'Names the emotion before the customer does. Reduces resistance by showing you already understand their situation without them having to explain it.'});
+
+  // Mirroring — repeats last 2-3 words
+  if(/\.\.\.|— and |you were |you came |you researched/i.test(msg))
+    mechanics.push({c:'#64748B',l:'Mirror',e:'Reflects the customer own language back. Creates instant connection and signals you are listening — not pitching.'});
+
+  // Accusation Audit — preempts the fear
+  if(/probably expect|you have probably|not what this is|not a pitch|not how we operate|games/i.test(msg))
+    mechanics.push({c:'#EF4444',l:'Accusation Audit',e:'Names the negative assumption before the customer can raise it. Disarms resistance immediately — they cannot object to something you already acknowledged.'});
+
+  // Calibrated question — what/how open-ended
+  if(/what (is|are|matters|would|do)|how (does|would|can)|which (is|works|would)/i.test(msg))
+    mechanics.push({c:'#3B82F6',l:'Calibrated Question',e:'Open-ended question that guides the customer toward a decision without feeling pushed. They reach the conclusion themselves.'});
+
+  // No-oriented question
+  if(/terrible idea|bad idea|make sense to|would it be/i.test(msg))
+    mechanics.push({c:'#F59E0B',l:'No-Oriented Question',e:'Designed to get a "no" that actually means yes. Triggers the customer instinct to say no, which paradoxically advances the conversation.'});
+
+  // Embedded commands — when/as not if
+  if(/when (you|we|i)|as (you|we)|once you/i.test(msg))
+    mechanics.push({c:'#22C55E',l:'Embedded Command',e:'"When you come in" not "if you want to come in." The customer mind processes the action as already happening — not hypothetical.'});
+
+  // Cold reading
+  if(/clearly|you (obviously|already|definitely|know what)|that tells me|i can tell/i.test(msg))
+    mechanics.push({c:'#A855F7',l:'Cold Reading',e:'Reflects a positive trait back at them based on their behavior. Validates their approach and creates reciprocity — they feel seen, not sold.'});
+
+  // Third party
+  if(/a customer|most customers|buyers (like|in)|someone (in|like)/i.test(msg))
+    mechanics.push({c:'#06B6D4',l:'Third-Party Story',e:'Social proof delivered without pressure. A past customer makes the case — removing the direct sales dynamic and letting them see themselves in the story.'});
+
+  // Double bind close
+  if(/(this week|tomorrow|weekend).*(or|vs).*(next|morning|afternoon|week)|morning or afternoon|week or next/i.test(msg))
+    mechanics.push({c:'#F97316',l:'Double Bind Close',e:'Both options advance the sale. Customer feels in control choosing between two paths — both of which move them forward.'});
+
+  // FIC — specific opener
+  if(new RegExp('(i saw you|i noticed|exact match|'+(LEAD.vehicle||'zzz').split(' ').slice(0,2).join(' ')+'|stock #)','i').test(msg))
+    mechanics.push({c:'#3B82F6',l:'FIC Focus',e:'Opens with something specific to THIS customer — not a template greeting. Interrupts autopilot and proves you actually read their lead.'});
+
+  // Scarcity — only if real data
+  if(/only (one|1)|had interest|will not last|timing/i.test(msg)&&(LEAD.stock||LEAD.daysOnLot))
+    mechanics.push({c:'#F97316',l:'Real Scarcity',e:'Based on actual inventory data — not manufactured urgency. Paired with regret prevention so it feels helpful, not pushy.'});
+
+  // Fallback if nothing detected
+  if(mechanics.length===0)
+    mechanics.push({c:'#64748B',l:'Conversational',e:'Low-friction opener designed to establish contact without triggering defenses. Lets the customer set the pace.'});
+
+  // ── STRATEGIC NARRATIVE ───────────────────────────────────
+  var narrative='';
+  if(mbs.color==='Blue')
+    narrative='This response is engineered for a Guardian — someone who needs to feel safe before they move. Every word removes a potential friction point. The goal is not to close; it is to create enough psychological safety that the customer takes one small step forward on their own terms.';
+  else if(mbs.color==='Yellow')
+    narrative='This response respects the Analyst research and meets them at their level. Rather than pushing, it validates their process and positions you as a competent partner in their decision. The calibrated question hands them control — which is exactly what they want.';
+  else if(mbs.color==='Green')
+    narrative='This response leads with relationship, not transaction. The Relator needs to feel remembered and valued as a person before they will engage on price or product. The warm opener and personal acknowledgment do the heavy lifting before any vehicle detail is mentioned.';
+  else
+    narrative='This response cuts straight to the Driver value system — speed, competence, and respect for their time. No pleasantries, no preamble. The accusation audit disarms their defenses in the first sentence so the rest lands clean.';
+
+  // ── CONDITIONAL FOLLOW-UPS ────────────────────────────────
+  var followups=[];
+
+  // Source-specific conditionals
+  if(notes.indexOf('gubagoo')>=0||notes.indexOf('payment')>=0){
+    followups.push({cond:'They ask about the real payment',action:'Give a range based on lender tiers. Never match the calculator number — show it as a reference, then show a better one.'});
+    followups.push({cond:'They go silent after this',action:'Day 2 — no-oriented question: "Would it be a terrible idea to take 10 minutes and see what we can actually do?"'});
+    followups.push({cond:'They confirm they want to come in',action:'Lock the appointment with a double bind: "Morning or afternoon work better for you?"'});
+  } else if(notes.indexOf('truecar')>=0){
+    followups.push({cond:'They confirm the appointment',action:'Send confirmation with stock # and parking instructions. Have the vehicle pulled up front.'});
+    followups.push({cond:'They ask if price is negotiable',action:'Reaffirm TrueCar certified — the price is locked, that is the benefit. Redirect to the visit.'});
+    followups.push({cond:'They go silent',action:'Day 3 — scarcity check: vehicle is still here but has had interest. One sentence, no pitch.'});
+  } else if(notes.indexOf('channel switch')>=0||notes.indexOf('email only')>=0){
+    followups.push({cond:'They reply to the email',action:'Respond within 15 minutes. Keep it short — one answer, one question. Do not over-send.'});
+    followups.push({cond:'No reply within 24 hours',action:'One follow-up email, subject line only changed. If no response after two emails, stop. Do not call or text.'});
+    followups.push({cond:'They ask for the OTD price',action:'Send the number directly in the email. No "come in to find out." They asked for transparency — give it.'});
+  } else if(notes.indexOf('xchange')>=0||parseInt(LEAD.svcVisits||0)>10){
+    followups.push({cond:'They ask about their equity',action:'Invite them for a 15-minute in-person appraisal. Frame it as a quick stop on their next service visit.'});
+    followups.push({cond:'They say they are not ready',action:'Label it: "It sounds like the timing just is not right yet." Then ask: "What would need to change for it to make sense?"'});
+    followups.push({cond:'They ask about payment options',action:'Reference their service history — "Based on what you have done with us, your equity position is stronger than most."'});
+  } else if(notes.indexOf('competitor')>=0||notes.indexOf('price anchor')>=0){
+    var pa=(notes.match(/price anchor:\s*(\$[\d,]+)/i)||[])[1]||'their number';
+    followups.push({cond:'They mention '+pa+' again',action:'Acknowledge it directly: "That is a real number — let me show you what we can do alongside it." Never dismiss or ignore their anchor.'});
+    followups.push({cond:'They confirm a competitor visit',action:'Move faster. Send the full OTD breakdown before they go. Give them a reason to compare.'});
+    followups.push({cond:'They come back after visiting competitor',action:'Ask one calibrated question: "What did you see there that you want to talk through?" Listen before responding.'});
+  } else {
+    followups.push({cond:'They reply positively',action:'Book the appointment immediately — double bind: "This week or next? Morning or afternoon?"'});
+    followups.push({cond:'They ask about price first',action:'Give a range or reference the internet price. Then redirect: "Best way to lock it in is a quick 20-minute visit."'});
+    followups.push({cond:'No response after 24 hours',action:'One follow-up, different angle — use a different path from the options above. Do not repeat the same message.'});
+  }
+
+  // ── RENDER ────────────────────────────────────────────────
+  var h='';
+
+  // Mechanics grid
+  h+='<div style="font-size:9px;font-weight:800;color:#64748B;text-transform:uppercase;letter-spacing:.8px;margin-bottom:8px;margin-top:4px;">Voss Mechanics</div>';
+  h+='<div style="display:grid;grid-template-columns:repeat(2,1fr);gap:6px;margin-bottom:10px;">';
+  mechanics.slice(0,4).forEach(function(m){
+    h+='<div style="background:'+m.c+'0f;border:1px solid '+m.c+'33;border-radius:7px;padding:8px 10px;">'
+      +'<div style="font-size:10px;font-weight:700;color:'+m.c+';margin-bottom:4px;">'+m.l+'</div>'
+      +'<div style="font-size:10px;color:#94A3B8;line-height:1.5;">'+m.e+'</div>'
+      +'</div>';
+  });
+  h+='</div>';
+
+  // Narrative
+  h+='<div style="border-left:3px solid #F59E0B;padding:8px 12px;background:#0d0d00;border-radius:0 6px 6px 0;margin-bottom:10px;">'
+    +'<div style="font-size:11px;color:#CBD5E1;line-height:1.6;font-style:italic;">'+narrative+'</div>'
+    +'</div>';
+
+  // Conditional follow-ups
+  h+='<div style="font-size:9px;font-weight:800;color:#64748B;text-transform:uppercase;letter-spacing:.8px;margin-bottom:6px;">Based on Their Reply</div>';
+  followups.forEach(function(f){
+    h+='<div style="background:#0B1120;border:1px solid #1E293B;border-radius:6px;padding:8px 10px;margin-bottom:5px;">'
+      +'<div style="font-size:9px;font-weight:700;color:#475569;text-transform:uppercase;letter-spacing:.5px;margin-bottom:3px;">'+f.cond+'</div>'
+      +'<div style="font-size:11px;color:#E2E8F0;line-height:1.4;">'+f.action+' <span style="color:#475569;">&#8599;</span></div>'
+      +'</div>';
+  });
+
+  out.innerHTML=h;
+}
+
+
 function doCopy(key){
   var txt=_msgStore[key];
   if(!txt)return;

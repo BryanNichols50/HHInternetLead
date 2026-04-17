@@ -701,7 +701,7 @@ function buildMultiPaths(lead,mbs,trans,sensory,suffering,voss){
   var col=mbs.color;
   var spName = lead.salespersonFirst || (lead.salesperson ? (lead.salesperson.includes(',') ? lead.salesperson.split(',')[1].trim().split(' ')[0] : lead.salesperson.split(' ')[0]) : 'Bryan');
   var sig='–'+spName;
-  var sigE=spName+'\nHendrick Honda Charlotte';
+  var sigE=spName+'\\nHendrick Honda Charlotte';
   var n='\n';
   var nn='\n\n';
   // channel ack line
@@ -1168,6 +1168,18 @@ function renderRC(tab){
     var rep=T.followups;
     var crmBlock='<div class="crm-block"><div class="crm-label">CRM Note</div><div class="crm-line">'+rep.crmNote+'</div></div>';
 
+    // ── SITUATION INPUT ───────────────────────────────────────
+    var situationBlock='<div style="margin-bottom:14px;">'
+      +'<div style="font-size:9px;font-weight:800;color:#64748B;text-transform:uppercase;letter-spacing:.8px;margin-bottom:6px;">What happened?</div>'
+      +'<textarea id="situation-input" placeholder="Type what happened — e.g. &quot;Customer said the payment is too high&quot; or &quot;She asked about adding a trade&quot; or &quot;He said he needs to think about it&quot; or &quot;No response after 2 days&quot;..." '
+      +'style="width:100%;background:#0B1120;border:1px solid #2A3A50;border-radius:7px;padding:9px 11px;color:#E2E8F0;font-family:inherit;font-size:12px;resize:vertical;min-height:70px;outline:none;line-height:1.5;" '
+      +'oninput="clearSituationResults()"></textarea>'
+      +'<button onclick="buildSituationResponse()" '
+      +'style="margin-top:6px;width:100%;padding:10px;border:none;border-radius:7px;background:linear-gradient(135deg,#00558C,#0070B8);color:#fff;font-family:inherit;font-size:13px;font-weight:800;cursor:pointer;">'
+      +'⚡ Generate Response</button>'
+      +'<div id="situation-results" style="margin-top:10px;"></div>'
+      +'</div>';
+
     // Detect if customer has actually responded from comms history or notes
     var hasRealReply = false;
     var realReplyText = '';
@@ -1208,9 +1220,9 @@ function renderRC(tab){
       var replyDisplay = realReplyText.length > 5
         ? '<div class="rep-bubble"><div class="rep-lbl">Customer Response Detected</div><div class="rep-txt">&ldquo;'+realReplyText.slice(0,200)+'&rdquo;</div></div>'
         : '<div class="rep-bubble"><div class="rep-lbl">Response Recorded</div><div class="rep-txt">Customer has been reached — use follow-ups below.</div></div>';
-      el.innerHTML=backBtn+ftabs+replyDisplay+'<div class="sub-sec">Text Follow-Ups</div>'+rep.repliedTexts.map(function(o,i){return mo(o,'frt'+i,selFT,function(k){selFT=k;renderRC('followup');});}).join('')+'<div class="sub-sec">Email Follow-Ups</div>'+rep.repliedEmails.map(function(o,i){return mo(o,'fre'+i,selFE,function(k){selFE=k;renderRC('followup');});}).join('')+crmBlock;
+      el.innerHTML=backBtn+situationBlock+ftabs+replyDisplay+'<div class="sub-sec">Text Follow-Ups</div>'+rep.repliedTexts.map(function(o,i){return mo(o,'frt'+i,selFT,function(k){selFT=k;renderRC('followup');});}).join('')+'<div class="sub-sec">Email Follow-Ups</div>'+rep.repliedEmails.map(function(o,i){return mo(o,'fre'+i,selFE,function(k){selFE=k;renderRC('followup');});}).join('')+crmBlock;
     } else {
-      el.innerHTML=backBtn+ftabs+'<div class="rep-bubble" style="border-left-color:#64748B"><div class="rep-lbl" style="color:#64748B">No Response — '+rep.noReplyDay+'</div><div class="rep-txt" style="font-size:10px;color:#475569;">No response detected in comms history. Use day-appropriate follow-up below.</div></div><div class="sub-sec">Text Follow-Ups</div>'+rep.noReplyTexts.map(function(o,i){return mo(o,'fnt'+i,selFT,function(k){selFT=k;renderRC('followup');});}).join('')+'<div class="sub-sec">Email Follow-Ups</div>'+rep.noReplyEmails.map(function(o,i){return mo(o,'fne'+i,selFE,function(k){selFE=k;renderRC('followup');});}).join('')+crmBlock;
+      el.innerHTML=backBtn+situationBlock+ftabs+'<div class="rep-bubble" style="border-left-color:#64748B"><div class="rep-lbl" style="color:#64748B">No Response — '+rep.noReplyDay+'</div><div class="rep-txt" style="font-size:10px;color:#475569;">No response detected in comms history. Use day-appropriate follow-up below.</div></div><div class="sub-sec">Text Follow-Ups</div>'+rep.noReplyTexts.map(function(o,i){return mo(o,'fnt'+i,selFT,function(k){selFT=k;renderRC('followup');});}).join('')+'<div class="sub-sec">Email Follow-Ups</div>'+rep.noReplyEmails.map(function(o,i){return mo(o,'fne'+i,selFE,function(k){selFE=k;renderRC('followup');});}).join('')+crmBlock;
     }
   }
 }
@@ -1223,6 +1235,103 @@ function mo(o,key,activeKey,onClick){
   _msgStore[key]=o.msg;
   var pathDesc=o.path?'<div style="font-size:9px;color:#475569;margin-top:2px;line-height:1.3;">'+o.path+'</div>':'';
   return'<div class="mopt" style="background:'+(on?'#111827':'var(--bg2)')+';border:'+(on?'2px solid '+tc:'1px solid var(--bdr)')+';" onclick="('+onClick.toString()+')(\''+key+'\')"><div class="mopt-hdr"><div class="mopt-left"><div class="opt-radio" style="border-color:'+(on?tc:'var(--bdr2)')+'">'+(on?'<div class="opt-dot" style="background:'+tc+'"></div>':'')+'</div><div><div class="opt-lbl">'+o.label+'</div><div class="opt-tags">'+(o.hughes||[]).map(function(h){return'<span class="htag" style="background:'+(HC[h]||'#64748B')+'22;color:'+(HC[h]||'#64748B')+'">'+h+'</span>';}).join('')+'</div></div></div><span class="ttag" style="background:'+tc+'1A;color:'+tc+'">'+o.tag+'</span></div>'+(on?'<div class="mopt-body">'+(o.subject?'<div class="m-subject">Subject: <span>'+o.subject+'</span></div>':'')+'<div class="m-bubble"><pre>'+safeMsg+'</pre></div><button class="copy-btn" id="cb-'+key+'" onclick="event.stopPropagation();doCopy(\''+key+'\')">Copy</button></div>':'')+'</div>';
+}
+
+function clearSituationResults(){
+  var r=document.getElementById('situation-results');
+  if(r) r.innerHTML='';
+}
+
+function buildSituationResponse(){
+  var input=document.getElementById('situation-input');
+  var out=document.getElementById('situation-results');
+  if(!input||!out) return;
+  var situation=input.value.trim();
+  if(!situation){out.innerHTML='<div style="font-size:11px;color:#475569;">Type what happened first.</div>';return;}
+  var mbs=RESULT.mbs;
+  var fn=LEAD.firstName||LEAD.name.split(' ')[0];
+  var v=LEAD.vehicle||'the vehicle';
+  var stk=LEAD.stock?(' Stock #'+LEAD.stock):'';
+  var notes=(LEAD.notes||'').toLowerCase();
+  var spName=window._salesperson||'Bryan';
+  var sig='\u2013'+spName;
+  var N='\n'; var NN='\n\n';
+  var sigE=spName+N+'Hendrick Honda Charlotte';
+  var isPayment=/payment.*(high|much|expensive|work)|too (high|much|expensive)|can.?t afford|over.*budget/i.test(situation);
+  var isThink=/think|consider|not (sure|ready)|let me|talk.*(wife|husband|spouse)|need.*time/i.test(situation);
+  var isNoReply=/no (response|reply|answer)|hasn.?t|did.?n.?t (respond|reply|answer)|silent|ghost/i.test(situation);
+  var isTrade=/trade|trade.?in|my (car|vehicle|truck)/i.test(situation);
+  var isPrice=/price|how much|what.*cost|otd|out.the.door|best.*price|lower/i.test(situation);
+  var isAppt=/appointment|come in|visit|schedule|when.*available/i.test(situation);
+  var isYes=/interested|yes|sounds good|ready|want to|love it|great/i.test(situation);
+  var isComp=/other dealer|competitor|better deal|going.*else|scott clark|fred anderson/i.test(situation);
+  var isCredit=/credit|financing|get approved|qualify|interest rate/i.test(situation);
+  var label=isPayment?'Payment Objection':isThink?'Needs More Time':isNoReply?'No Response':isTrade?'Trade Question':isPrice?'Price Question':isAppt?'Appointment Request':isYes?'Positive Signal':isComp?'Competitor Mentioned':isCredit?'Credit Question':'Custom Situation';
+  var texts=[],emails=[];
+  var pa=(notes.match(/price anchor:\s*(\$[\d,]+)/i)||[])[1]||'';
+  var pmMatch=situation.match(/\$?([\d,]+)/);
+  var pmAmt=pmMatch?'$'+pmMatch[1]:'that number';
+  if(isPayment){
+    texts.push({l:'Label + Three Buckets',t:'Hi '+fn+' \u2014 I hear you on '+pmAmt+'. That is usually the calculator, not your actual rate. Quick question: was it the payment amount, the term length, or the down payment that felt off? Each one changes the answer differently. '+sig});
+    texts.push({l:'No-Oriented',t:'Hi '+fn+' \u2014 would it be a terrible idea to let me run one alternative scenario before you decide? I think you will see a different number. '+sig});
+    texts.push({l:'Third-Party',t:'Hi '+fn+' \u2014 a customer last week saw the same number and her actual lender rate came in 2.5% lower. The calculator always overstates it. Worth 5 minutes? '+sig});
+    emails.push({l:'Full Reassure',s:v+' \u2014 The Real Number, '+fn,b:'Hi '+fn+','+NN+'I hear you on the payment. That number is based on a generic rate \u2014 not your actual situation.'+NN+'Quick question: was it the monthly amount, the term, or the down payment that felt off? Each one is a different lever.'+NN+'I can put together a real scenario from actual lender rates \u2014 typically looks very different.'+NN+sigE});
+    emails.push({l:'Short + Direct',s:'Alternative Payment on the '+v+', '+fn,b:'Hi '+fn+','+NN+'Let me run one alternative scenario. The calculator uses a generic rate \u2014 our lender network usually comes in significantly lower.'+NN+'Was it the payment amount, the term, or the down payment that concerned you most?'+NN+sigE});
+  } else if(isThink){
+    texts.push({l:'Label + No Pressure',t:'Hi '+fn+' \u2014 completely understand. It sounds like you want to make sure this is the right move. What is the one thing that would help you feel confident moving forward? '+sig});
+    texts.push({l:'No-Oriented',t:'Hi '+fn+' \u2014 would it be a terrible idea to get the full numbers in writing first so you have something concrete to think through? No commitment needed. '+sig});
+    texts.push({l:'Reduce the Step',t:'Hi '+fn+' \u2014 no rush at all. Is there one specific question I can answer that would make the decision easier? '+sig});
+    emails.push({l:'Patience + Black Swan',s:'No Rush on the '+v+', '+fn,b:'Hi '+fn+','+NN+'Absolutely no pressure \u2014 this is a big decision and it should feel right.'+NN+'One question: is there something specific you are trying to figure out, or is it more about the timing? I want to make sure I am helping with the right thing.'+NN+sigE});
+  } else if(isNoReply){
+    var days=(LEAD.commsStage||'').match(/Day (\d+)/i);
+    var dayNum=days?parseInt(days[1]):2;
+    texts.push({l:'Soft Check-In',t:'Hi '+fn+' \u2014 just checking in on the '+v+'. If timing is off or something changed, totally fine \u2014 just let me know. '+sig});
+    texts.push({l:'Accusation Audit',t:'Hi '+fn+' \u2014 I am guessing my last message missed the mark. What would actually be helpful right now? '+sig});
+    if(dayNum>=4){
+      texts.push({l:'Breakup',t:'Hi '+fn+' \u2014 I will stop reaching out after this. If the '+v+' ever makes sense, I am here. Wishing you the best. '+sig});
+      emails.push({l:'Breakup Email',s:'Closing Out \u2014 '+fn,b:'Hi '+fn+','+NN+'I do not want to keep filling your inbox if timing is not right.'+NN+'I will leave it here \u2014 if the '+v+' ever makes sense, reach out anytime. No hard feelings.'+NN+'Wishing you well.'+NN+sigE});
+    } else {
+      emails.push({l:'Different Angle',s:'Quick Question, '+fn,b:'Hi '+fn+','+NN+'I wanted to try a different approach \u2014 is there something about the '+v+' or the process that has not felt right?'+NN+'Happy to go in whatever direction is most useful for you.'+NN+sigE});
+    }
+  } else if(isTrade){
+    texts.push({l:'Trade First',t:'Hi '+fn+' \u2014 the trade value is best locked in with a quick in-person look \u2014 about 15 minutes. Online estimates are almost always conservative. Want the real number? '+sig});
+    texts.push({l:'Calibrated',t:'Hi '+fn+' \u2014 what matters more right now \u2014 knowing the trade value first, or seeing how it affects the payment on the '+v+'? '+sig});
+    emails.push({l:'Trade + Gap',s:'Your Trade on the '+v+', '+fn,b:'Hi '+fn+','+NN+'The trade value is best locked in with a quick in-person appraisal \u2014 online tools typically undervalue vehicles in good shape.'+NN+'Once I have the real number I can show you exactly how it applies to the '+v+' and what the gap looks like.'+NN+'Worth a 15-minute stop?'+NN+sigE});
+  } else if(isPrice){
+    var priceRef=LEAD.vdpPrice?'The '+v+' is priced at '+LEAD.vdpPrice:'The '+v+' is priced at current market';
+    texts.push({l:'Straight Answer',t:'Hi '+fn+' \u2014 '+priceRef+'. Internet price is what you pay \u2014 no back and forth. Want the full out-the-door breakdown? '+sig});
+    texts.push({l:'Calibrated',t:'Hi '+fn+' \u2014 are you looking for the out-the-door number, a payment range, or both? Each gives you a different picture. '+sig});
+    emails.push({l:'Full Breakdown',s:'Pricing on the '+v+', '+fn,b:'Hi '+fn+','+NN+priceRef+'.'+NN+'I can send the full out-the-door breakdown: internet price, tax/title/doc fees, any current Honda offers, and payment scenarios if financing.'+NN+'What is most useful \u2014 out-the-door total or monthly payment options?'+NN+sigE});
+  } else if(isYes){
+    texts.push({l:'Book It',t:'Hi '+fn+' \u2014 let us lock it in. When works better \u2014 this week or next? Morning or afternoon? '+sig});
+    texts.push({l:'Confirm + Prepare',t:'Hi '+fn+' \u2014 great. I will have the '+v+stk+' pulled up front and ready. This week or next? '+sig});
+    emails.push({l:'Appointment Confirmation',s:'Your Appointment \u2014 '+fn,b:'Hi '+fn+','+NN+'Perfect \u2014 I will have everything ready for you.'+NN+'The '+v+stk+' will be pulled up front when you arrive.'+NN+'This week or next? Morning or afternoon?'+NN+sigE});
+  } else if(isComp){
+    var cn=(notes.match(/competitor:\s*([\w\s]+?)(?:\s*\||\s*$)/i)||['','the other dealer'])[1].trim();
+    texts.push({l:'Acknowledge + Differentiate',t:'Hi '+fn+' \u2014 completely makes sense to compare. Before you go, let me send you our full out-the-door number so you have both in hand. Takes 2 minutes. '+sig});
+    texts.push({l:'Black Swan',t:'Hi '+fn+' \u2014 what is the one thing they offered that has you leaning that direction? I want to make sure you are comparing the right things. '+sig});
+    emails.push({l:'Side by Side',s:'Before You Decide \u2014 '+fn,b:'Hi '+fn+','+NN+'Comparing dealers is the right move. Before you finalize anything, let me get you our complete picture so you can compare side by side.'+NN+'Send me 2 minutes and I will have everything in your inbox.'+NN+sigE});
+  } else if(isCredit){
+    texts.push({l:'Privacy First',t:'Hi '+fn+' \u2014 no credit pull needed for me to get you a real payment estimate. I work with over a dozen lenders. What payment range would feel comfortable? '+sig});
+    texts.push({l:'No-Oriented',t:'Hi '+fn+' \u2014 would it be a terrible idea to let me check options before assuming anything? No commitment, no pull until you say so. '+sig});
+    emails.push({l:'Lender Network',s:'Financing Options on the '+v+', '+fn,b:'Hi '+fn+','+NN+'No credit pull needed for me to give you a real picture. I work with a network of lenders that covers most situations.'+NN+'What monthly range would feel comfortable, and how much would you want to put down?'+NN+sigE});
+  } else {
+    var custQ='"'+situation.slice(0,80)+'"';
+    texts.push({l:'Label + Question',t:'Hi '+fn+' \u2014 I hear you on '+custQ+'. What would be most helpful from me right now? '+sig});
+    texts.push({l:'Calibrated',t:'Hi '+fn+' \u2014 quick question: what is the one thing that would make this easier to move forward on? '+sig});
+    texts.push({l:'Acknowledge',t:'Hi '+fn+' \u2014 completely understand. The '+v+' is still here when timing feels right. Anything I can do in the meantime? '+sig});
+    emails.push({l:'Open-Ended',s:'Following Up \u2014 '+fn,b:'Hi '+fn+','+NN+'I wanted to follow up based on our conversation.'+NN+'What would be most useful for you right now? Happy to go in whatever direction makes the most sense.'+NN+sigE});
+  }
+  var h='<div style="background:#A855F718;border:1px solid #A855F740;border-radius:8px;padding:8px 12px;margin-bottom:12px;"><div style="font-size:9px;font-weight:700;color:#A855F7;text-transform:uppercase;letter-spacing:.7px;margin-bottom:2px;">Detected Situation</div><div style="font-size:12px;font-weight:700;color:#E2E8F0;">'+label+'</div></div>';
+  if(texts.length){
+    h+='<div class="sub-sec">Text Responses</div>';
+    texts.forEach(function(t,i){var sid='sit-t'+i+Date.now();_msgStore[sid]=t.t;h+='<div class="mopt" style="background:#0B1120;border:1px solid #1E293B;"><div class="mopt-hdr"><div class="mopt-left"><div class="opt-lbl">'+t.l+'</div></div></div><div class="mopt-body"><div class="m-bubble"><pre>'+t.t.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')+'</pre></div><button class="copy-btn" onclick="navigator.clipboard.writeText(_msgStore[\''+sid+'\']);this.textContent=\'Copied\';setTimeout(function(){this.textContent=\'Copy\';}.bind(this),1500)">Copy</button></div></div>';});
+  }
+  if(emails.length){
+    h+='<div class="sub-sec" style="margin-top:12px;">Email Responses</div>';
+    emails.forEach(function(e,i){var sid='sit-e'+i+Date.now();_msgStore[sid]=e.b;h+='<div class="mopt" style="background:#0B1120;border:1px solid #1E293B;"><div class="mopt-hdr"><div class="mopt-left"><div class="opt-lbl">'+e.l+'</div></div></div><div class="mopt-body"><div class="m-subject">Subject: <span>'+e.s+'</span></div><div class="m-bubble"><pre>'+e.b.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')+'</pre></div><button class="copy-btn" onclick="navigator.clipboard.writeText(_msgStore[\''+sid+'\']);this.textContent=\'Copied\';setTimeout(function(){this.textContent=\'Copy\';}.bind(this),1500)">Copy</button></div></div>';});
+  }
+  out.innerHTML=h;
 }
 
 function analyzeResponse(key){

@@ -223,7 +223,7 @@ function detectTransplant(phone,locationNote){
 function detectSuffering(lead){
   var notes=(lead.notes||'').toLowerCase();
   var src=(lead.source||'').toLowerCase();
-  var svc=parseInt(lead.svc)||0;
+  var svc=parseInt(lead.svc||lead.svcVisits)||0;
   var ltv=parseFloat((lead.ltv||'').replace(/[$,]/g,''))||0;
   if(notes.indexOf('2 am')>=0||notes.indexOf('11pm')>=0||notes.indexOf('midnight')>=0)
     return 'Late-night submission — anxiety, insomnia, agonized decision. Gentler tone, no urgency, acknowledge the weight of this choice.';
@@ -248,7 +248,7 @@ function detectSuffering(lead){
 function detectMBS(lead){
   var notes=(lead.notes||'').toLowerCase();
   var src=(lead.source||'').toLowerCase();
-  var svc=parseInt(lead.svc)||0;
+  var svc=parseInt(lead.svc||lead.svcVisits)||0;
   var ltv=parseFloat((lead.ltv||'').replace(/[$,]/g,''))||0;
   // Existing customer = default Relator/Green
   if(ltv>0||svc>10)
@@ -316,7 +316,7 @@ function detectSensory(lead){
 function calcScore(lead){
   var s=0,r=[];
   var ltv=parseFloat((lead.ltv||'').replace(/[$,]/g,''))||0;
-  var svc=parseInt(lead.svc)||0;
+  var svc=parseInt(lead.svc||lead.svcVisits)||0;
   if(ltv>0){s+=25;r.push('Repeat customer — LTV '+lead.ltv);}
   if(svc>=100){s+=20;r.push(svc+' service visits');}
   else if(svc>=50){s+=16;r.push(svc+' service visits');}
@@ -330,7 +330,7 @@ function calcScore(lead){
   else if(src.indexOf('truecar')>=0){s+=7;r.push('TrueCar lead');}
   else if(src.indexOf('cargurus')>=0||src.indexOf('cars.com')>=0){s+=9;r.push('Third-party source');}
   else if(src.length>0){s+=5;r.push('Internet source');}
-  var st=(lead.status||'').toLowerCase();
+  var st=(lead.status||lead.salesStatus||'').toLowerCase();
   if(st.indexOf('working')>=0||st.indexOf('engaged')>=0){s+=15;r.push('Active working status');}
   else if(st.indexOf('appointment')>=0){s+=12;r.push('Appointment set');}
   else if(st.indexOf('hot')>=0){s+=10;r.push('Hot status');}
@@ -670,20 +670,30 @@ function runAnalysis(){
   var vehicle=document.getElementById('in-vehicle').value.trim();
   if(!name){alert('Please enter a customer name.');return;}
   // vehicle optional when launched from extension
+  var gv=function(id){var e=document.getElementById(id);return e?e.value.trim():'';};
   LEAD={
     name:name,firstName:name.split(' ')[0],
-    phone:document.getElementById('in-phone').value.trim(),
-    email:document.getElementById('in-email').value.trim(),
-    source:document.getElementById('in-source').value.trim(),
+    phone:gv('in-phone'),
+    email:gv('in-email'),
+    source:gv('in-source'),
     vehicle:vehicle,
-    trade:document.getElementById('in-trade').value.trim(),
-    stock:document.getElementById('in-stock').value.trim(),
-    status:document.getElementById('in-status').value.trim(),
-    svc:document.getElementById('in-svc').value.trim(),
-    ltv:document.getElementById('in-ltv').value.trim(),
-    equity:document.getElementById('in-equity').value.trim(),
-    location:document.getElementById('in-location').value.trim(),
-    notes:document.getElementById('in-notes').value.trim(),
+    trade:gv('in-trade'),
+    stock:gv('in-stock'),
+    status:gv('in-status'),
+    svc:gv('in-svc'),
+    svcVisits:gv('in-svc'),
+    ltv:gv('in-ltv'),
+    equity:gv('in-equity'),
+    location:gv('in-location'),
+    notes:gv('in-notes'),
+    creditScore:gv('in-credit'),
+    vdpPrice:gv('in-price'),
+    daysOnLot:gv('in-days'),
+    commsStage:gv('in-stage'),
+    submissionTime:gv('in-subtime'),
+    customerMsg:gv('in-custmsg'),
+    similarUnits:gv('in-similar'),
+    dealStage:gv('in-dealstage'),
   };
   var trans=detectTransplant(LEAD.phone,LEAD.location);
   LEAD.transplant=trans;

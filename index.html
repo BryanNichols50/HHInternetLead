@@ -307,8 +307,8 @@ function detectVoss(mbs,lead){
 function detectSensory(lead){
   // Use actual customer message first, then notes
   var n=((lead.customerMsg||'')+(lead.notes||'')).toLowerCase();
-  if(/\b(see|look|picture|show|clear|bright|vision|view|imagine|looks|showed)\b/.test(n)) return{ch:'Visual (V) — detected in customer message',words:['see','clear picture of','you'll see that','looking at']};
-  if(/\b(hear|sounds|tell|listen|resonates|rings|loud|quiet|talk|told)\b/.test(n)) return{ch:'Auditory (A) — detected in customer message',words:['tell you','walk you through','sounds right','here's what I can tell you']};
+  if(/\b(see|look|picture|show|clear|bright|vision|view|imagine|looks|showed)\b/.test(n)) return{ch:'Visual (V) — detected in customer message',words:['see','clear picture of','you will see that','looking at']};
+  if(/\b(hear|sounds|tell|listen|resonates|rings|loud|quiet|talk|told)\b/.test(n)) return{ch:'Auditory (A) — detected in customer message',words:['tell you','walk you through','sounds right','here is what I can tell you']};
   return{ch:'Kinesthetic (K) — default (no message or neutral language)',words:['feel','comfortable','solid','manageable','handle']};
 }
 
@@ -366,7 +366,7 @@ function buildTemplates(lead,mbs,trans,sensory,suffering,voss){
   if(trans){
     if(trans.military){
       tLine=' I noticed your number is a Fayetteville area code — are you local to Charlotte or stationed at Fort Liberty?';
-      tBlock='\n\nI noticed your number is a Fayetteville area code — are you local to Charlotte or stationed at Fort Liberty? Either way, you may be eligible for Honda\'s military discount program.';
+      tBlock='\n\nI noticed your number is a Fayetteville area code — are you local to Charlotte or stationed at Fort Liberty? Either way, you may be eligible for Honda military discount program.';
     } else if(trans.instate){
       tLine=' I noticed your number is an Asheville area code — are you making the drive to Charlotte, or would you like to explore options closer to you?';
       tBlock='\n\nI noticed your number is an Asheville area code — are you making the trip to Charlotte, or can I help connect you with a Hendrick store closer to Asheville?';
@@ -669,7 +669,7 @@ function runAnalysis(){
   var name=document.getElementById('in-name').value.trim();
   var vehicle=document.getElementById('in-vehicle').value.trim();
   if(!name){alert('Please enter a customer name.');return;}
-  if(!vehicle){alert('Please enter a vehicle of interest.');return;}
+  // vehicle optional when launched from extension
   LEAD={
     name:name,firstName:name.split(' ')[0],
     phone:document.getElementById('in-phone').value.trim(),
@@ -829,15 +829,23 @@ function backToInput(){
   if(document.getElementById('in-custmsg'))  document.getElementById('in-custmsg').value=p.get('customerMsg')||'';
   if(document.getElementById('in-similar'))  document.getElementById('in-similar').value=p.get('similarUnits')||'';
   if(document.getElementById('in-dealstage'))document.getElementById('in-dealstage').value=p.get('dealStage')||'';
-  // Social profile data from lookup
-  if(p.get('mbsSignal')) {
-    var sp=p.get('mbsSignal');
-    var existing=document.getElementById('in-notes').value;
-    document.getElementById('in-notes').value=(existing?existing+'
-
-':'')+'[SOCIAL PROFILE] '+sp;
+  // Social profile lookup removed
+  // Auto-run when launched from extension
+  if(p.get('autorun')==='1'&&p.get('name')) {
+    // Try at 800ms, then again at 2000ms as fallback
+    setTimeout(function(){
+      var n=document.getElementById('in-name').value.trim();
+      var v=document.getElementById('in-vehicle').value.trim();
+      if(n) runAnalysis();
+    }, 800);
+    setTimeout(function(){
+      // Fallback if first attempt failed
+      if(document.getElementById('screen-input').style.display!=='none'){
+        var n=document.getElementById('in-name').value.trim();
+        if(n) runAnalysis();
+      }
+    }, 2200);
   }
-  if(p.get('autorun')==='1'&&p.get('name')&&p.get('vehicle'))setTimeout(runAnalysis,300);
 })();
 </script>
 </body>

@@ -723,9 +723,9 @@ function buildMultiPaths(lead,mbs,trans,sensory,suffering,voss){
   var isExisting=parseFloat((lead.ltv||'').replace(/[$,]/g,''))>0;
   var tLine=trans?' I noticed your number is a '+trans.city+' area code — are you local to Charlotte or still in '+trans.city.split('/')[0]+'?':'';
   var col=mbs.color;
-  var spName = lead.salesperson ? lead.salesperson.split(',')[0].trim() : 'Bryan';
-  var sig='–'+spName+', Hendrick Honda';
-  var sigE=spName+'\nHendrick Honda Charlotte\n980-327-1238';
+  var spName = lead.salespersonFirst || (lead.salesperson ? (lead.salesperson.includes(',') ? lead.salesperson.split(',')[1].trim().split(' ')[0] : lead.salesperson.split(' ')[0]) : 'Bryan');
+  var sig='–'+spName;
+  var sigE=spName+'\nHendrick Honda Charlotte';
   var n='\n';
   var nn='\n\n';
   // channel ack line

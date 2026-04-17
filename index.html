@@ -183,7 +183,7 @@ body{font-family:'IBM Plex Sans',sans-serif;background:var(--bg);color:var(--tex
 <script>
 // ── COLOR MAPS ────────────────────────────────────────────────
 var HC={'FIC':'#3B82F6','Cold Reading':'#A855F7','Suffering':'#EC4899','Double Bind':'#F59E0B','Embedded Cmd':'#22C55E','Needs/Fears':'#EF4444','Third-Party':'#06B6D4','Scarcity':'#F97316','Sensory (K)':'#8B5CF6','Sensory (V)':'#8B5CF6','Accusation Audit':'#EF4444','Label':'#EC4899','Mirror':'#64748B','Calibrated Q':'#3B82F6','No-Oriented Q':'#F59E0B','Black Swan':'#94A3B8'};
-var TC={'RECOMMENDED':'#22C55E','COMPETITIVE':'#F59E0B','LOW PRESSURE':'#3B82F6','PERSONAL TOUCH':'#8B5CF6','TRANSPLANT LEAN':'#A855F7','URGENCY':'#F97316','EXISTING CUSTOMER':'#22C55E'};
+var TC={'RECOMMENDED':'#22C55E','COMPETITIVE':'#F59E0B','LOW PRESSURE':'#3B82F6','PERSONAL TOUCH':'#8B5CF6','TRANSPLANT LEAN':'#A855F7','URGENCY':'#F97316','EXISTING CUSTOMER':'#22C55E','DISARMS RESISTANCE':'#EF4444','HIGH INTEL':'#A855F7','BUILDS TRUST':'#06B6D4','EFFICIENT':'#64748B','LOW RESISTANCE':'#3B82F6'};
 var MBC={Yellow:'#EAB308',Blue:'#3B82F6',Green:'#22C55E',Red:'#EF4444'};
 function sc(n){return n>=70?'#22C55E':n>=40?'#F59E0B':'#EF4444';}
 var RESULT=null,LEAD=null,selT=null,selE=null,selFT=null,selFE=null,fuMode='replied',rTab='text';
@@ -225,6 +225,12 @@ function detectSuffering(lead){
   var src=(lead.source||'').toLowerCase();
   var svc=parseInt(lead.svc||lead.svcVisits)||0;
   var ltv=parseFloat((lead.ltv||'').replace(/[$,]/g,''))||0;
+  // Channel switch — customer set a contact boundary
+  if(notes.indexOf('channel switch')>=0||notes.indexOf('email only')>=0||notes.indexOf('prefer by email')>=0||notes.indexOf('text only')>=0||notes.indexOf('prefer text')>=0)
+    return 'Customer set explicit contact preference. Guardian signal — they want control of the interaction. Honor it immediately. Open with acknowledgment of their preference.';
+  // Budget gap from ADF data
+  if(notes.indexOf('budget gap')>=0||notes.indexOf('budget ceiling')>=0||notes.indexOf('above ceiling')>=0)
+    return 'ADF shows budget ceiling below vehicle asking price. Fear: arriving and finding the price higher than expected. Lead with payment options and out-the-door number — never MSRP first.';
   if(notes.indexOf('2 am')>=0||notes.indexOf('11pm')>=0||notes.indexOf('midnight')>=0)
     return 'Late-night submission — anxiety, insomnia, agonized decision. Gentler tone, no urgency, acknowledge the weight of this choice.';
   if(notes.indexOf('665')>=0||notes.indexOf('620')>=0||notes.indexOf('subprime')>=0||notes.indexOf('near-prime')>=0||notes.indexOf('fair credit')>=0)
@@ -250,6 +256,9 @@ function detectMBS(lead){
   var src=(lead.source||'').toLowerCase();
   var svc=parseInt(lead.svc||lead.svcVisits)||0;
   var ltv=parseFloat((lead.ltv||'').replace(/[$,]/g,''))||0;
+  // Channel switch = immediate Guardian
+  if(notes.indexOf('channel switch')>=0||notes.indexOf('prefer by email')>=0||notes.indexOf('email only')>=0||notes.indexOf('prefer text')>=0)
+    return{profile:'Guardian',color:'Blue',letter:'B',reason:'Customer set explicit contact boundary — Guardian behavior. Wants control, predictability, no pressure.'};
   // Existing customer = default Relator/Green
   if(ltv>0||svc>10)
     return{profile:'Relator',color:'Green',letter:'G',reason:'Existing customer with service/purchase history — loyalty signals default to Relator (Green). Warm, relationship-driven tone.'};
@@ -664,6 +673,136 @@ function buildTemplates(lead,mbs,trans,sensory,suffering,voss){
   };
 }
 
+// ── MULTI-PATH RESPONSE GENERATOR ────────────────────────────
+function buildMultiPaths(lead,mbs,trans,sensory,suffering,voss){
+  var fn=lead.firstName||lead.name.split(' ')[0];
+  var v=lead.vehicle||'the vehicle';
+  var src=(lead.source||'').toLowerCase();
+  var notes=(lead.notes||'').toLowerCase();
+  var hasCS=notes.indexOf('channel switch')>=0||notes.indexOf('email only')>=0||notes.indexOf('prefer by email')>=0;
+  var hasBG=notes.indexOf('budget gap')>=0||notes.indexOf('budget ceiling')>=0;
+  var hasTrade=lead.trade&&lead.trade.length>3;
+  var tradeShort=hasTrade?lead.trade.split(' ').slice(0,3).join(' '):'';
+  var hasStock=lead.stock&&lead.stock.trim().length>2;
+  var stockRef=hasStock?', Stock #'+lead.stock:'';
+  var isExisting=parseFloat((lead.ltv||'').replace(/[$,]/g,''))>0;
+  var tLine=trans?' I noticed your number is a '+trans.city+' area code — are you local to Charlotte or still in '+trans.city.split('/')[0]+'?':'';
+  var col=mbs.color;
+  var sig='—Bryan, Hendrick Honda';
+  var sigE='Bryan\nHendrick Honda Charlotte\n980-327-1238';
+  var n='\n';
+  var nn='\n\n';
+  // channel ack line
+  var csLine=hasCS?'Email it is — completely understood.'+nn:'';
+  // budget line  
+  var bgLine=hasBG?'I want to make sure the number you see here is the number you pay at the dealership — no surprises.'+nn:'';
+  // promo
+  var promoLine=src.indexOf('1000')>=0?' The $1,000 Off New promotion you came through is still active.':src.indexOf('500')>=0?' The $500 Off Used promotion is still active.':'';
+
+  var paths=[];
+
+  // ── PATH A: Primary MBS-calibrated ───────────────────────
+  var pA_txt,pA_sub,pA_eml;
+  if(col==='Blue'){
+    pA_txt=['Hi '+fn+' '+sig.replace('—','—'),
+      hasCS?'Email it is — understood.':'I have a feeling the numbers may not have looked the way you expected.',
+      'The '+v+' is available'+stockRef+'.'+promoLine,
+      hasBG?'I want to show you the full out-the-door number before you commit to anything.':'No credit pull needed for me to get you a real number.',
+      hasBG?'Out-the-door number or monthly payment options — which is more useful first?':'Would it be a terrible idea to take 5 minutes and see what we can actually do?',
+      sig].join(' ');
+    pA_sub=v+' — Your ePrice, '+fn;
+    pA_eml=['Hi '+fn+',',nn,csLine,bgLine,
+      'The '+v+' is available'+stockRef+'.'+promoLine+nn,
+      'I can have the full breakdown — out-the-door number, payment options, current Honda offers — in your inbox right now. Everything visible before you come in.',
+      tLine?nn+tLine:'',nn,
+      'Out-the-door number first, or monthly payment options?',nn,sigE].join('');
+  } else if(col==='Yellow'){
+    pA_txt=['Hi '+fn+' —',
+      'the '+v+' you researched is here'+stockRef+'.'+promoLine,
+      'You clearly did the homework before submitting — that makes this straightforward.',
+      'What matters most right now — hitting a specific payment range, or confirming the exact trim? '+sig].join(' ');
+    pA_sub=v+' — Your Research + Our Numbers, '+fn;
+    pA_eml=['Hi '+fn+',',nn,
+      'You approached this the right way — research first, then reach out. The '+v+' is here'+stockRef+' and the numbers are straightforward.',
+      hasBG?nn+'I saw you had a specific price range in mind. I want to show you the full out-the-door number alongside payment scenarios so you have the complete picture before you come in.':'',
+      tLine?nn+tLine:'',nn,
+      'What matters most right now — confirming the out-the-door price, seeing payment options, or both?',nn,sigE].join('');
+  } else if(col==='Green'){
+    pA_txt=['Hi '+fn+' —',
+      isExisting?'great to hear from you again. The '+v+' is a natural next step.':'I saw you were interested in the '+v+' and wanted to reach out personally.',
+      'When you come in I will have it pulled up front.'+promoLine,
+      hasTrade?'I also want to make sure we give your '+tradeShort+' a fair look.':'',
+      tLine,
+      'This week or next? '+sig].filter(Boolean).join(' ');
+    pA_sub=isExisting?'Great to Hear From You, '+fn:v+' — For You, '+fn;
+    pA_eml=['Hi '+fn+',',nn,
+      isExisting?'It means a lot that you came back. After '+( lead.svc||'your')+' service visits here, you are part of the Hendrick Honda family — and that matters.'+nn:'I saw you were interested in the '+v+' and wanted to reach out personally, not through an auto-responder.'+nn,
+      'The '+v+' is available'+stockRef+'.'+promoLine+nn,
+      hasTrade?'I also want to make sure your '+tradeShort+' gets a fair appraisal — that number matters.'+nn:'',
+      tLine?tLine+nn:'',
+      'This week or next?',nn,sigE].join('');
+  } else {
+    pA_txt=[fn+' —','the '+v+' is here'+stockRef+'.'+promoLine,'Price is current. No games.',
+      'You have probably dealt with dealers who waste your time. That is not how we operate.',
+      'When can you come in? '+sig].join(' ');
+    pA_sub=v+' — Ready for You, '+fn;
+    pA_eml=[fn+',',nn,
+      'You did your homework. The '+v+' is here'+stockRef+'.'+promoLine+nn,
+      'Here is the number: '+(lead.vdpPrice||'available at internet pricing')+'. Here is the next step: pick a time and I will have it pulled up.',
+      tLine?nn+tLine:'',nn,
+      'This week or next?',nn,sigE].join('');
+  }
+  paths.push({label:'Path A — '+(col==='Blue'?'Label + Reassure':col==='Yellow'?'Calibrated Question':col==='Green'?'Mirror + Personal':'Accusation Audit + Direct'),path:'Primary — calibrated to '+mbs.profile+' ('+col+') profile',tag:'RECOMMENDED',techniques:['MBS Primary','Voss','FIC','Double Bind'],textMsg:pA_txt,emailSubject:pA_sub,emailMsg:pA_eml});
+
+  // ── PATH B: Accusation Audit ──────────────────────────────
+  var audit=hasCS?'You probably expected another call or text after you set an email preference. That is not happening.'
+    :hasBG?'You are probably expecting the price to come in higher than the number you had in mind. Fair concern — let me address that directly.'
+    :src.indexOf('truecar')>=0||src.indexOf('cargurus')>=0?'You are probably expecting a pitch right now. That is not what this is.'
+    :'You probably expected a generic auto-reply. That is not what this is.';
+  paths.push({label:'Path B — Accusation Audit',path:'Preempt the fear before they say it — lowers resistance immediately',tag:'DISARMS RESISTANCE',techniques:['Accusation Audit','Embedded Cmd','Double Bind'],
+    textMsg:['Hi '+fn+' —',audit,'The '+v+' is available'+stockRef+'.'+promoLine,hasBG?'I want to get you the full out-the-door number before you come in — zero surprises.':'When I pull the numbers together I think you will like what you see.',tLine,'This week or next? '+sig].filter(Boolean).join(' '),
+    emailSubject:'No Pitch — Just the Numbers, '+fn,
+    emailMsg:['Hi '+fn+',',nn,audit,nn,'Here is what I can tell you straight: the '+v+' is available'+stockRef+' and the internet price is honest.',hasBG?nn+'I want to send the full out-the-door breakdown now — the number you see here is the number you pay. No back-end add-ons.':nn+'Most customers are in and out in under an hour when they know what they want.',tLine?nn+tLine:'',nn,col==='Blue'?'Would it be a terrible idea to at least see the numbers?':'This week or next?',nn,sigE].join('')});
+
+  // ── PATH C: Black Swan ────────────────────────────────────
+  var bsQ=hasBG?'What matters most to you right now — getting the monthly payment into a specific range, or seeing the out-the-door price first?'
+    :hasTrade?'Is the trade the piece you want figured out first, or the new vehicle numbers?'
+    :src.indexOf('honda')>=0||src.indexOf('website')>=0?'What made you reach out to us specifically rather than another Honda dealer?'
+    :'What is it about the '+v+' that made it the one you stopped on?';
+  paths.push({label:'Path C — Black Swan Question',path:'Surface the unknown — find what is actually driving this before responding',tag:'HIGH INTEL',techniques:['Black Swan','Calibrated Q','FIC'],
+    textMsg:['Hi '+fn+' — quick question before I pull anything together:',bsQ,sig].join(' '),
+    emailSubject:'Quick Question Before I Pull Your Numbers — '+fn,
+    emailMsg:['Hi '+fn+',',nn,'Before I send anything over, I want to make sure I am pulling the right information together.',nn,bsQ,nn,'Once I know that, I can give you something actually useful instead of a generic price sheet.',nn,sigE].join('')});
+
+  // ── PATH D: Third-Party Story ─────────────────────────────
+  var tpS=hasBG?'A customer last week had the same concern about the price being higher than expected. We sent the full out-the-door breakdown before they came in. They were in and out in 40 minutes.'
+    :hasTrade?'A customer in a similar situation recently traded in a vehicle they thought would hurt the deal. The appraisal came in stronger than the online estimate — and the gap on the new car was very manageable.'
+    :src.indexOf('honda')>=0?'A customer who came through Honda website last month got the full breakdown emailed before they came in. They said it was the smoothest purchase they had ever made.'
+    :'Most customers who reach out the way you did are in and out in under an hour once they know what they want.';
+  paths.push({label:'Path D — Third-Party Story',path:'Let someone else make the case — removes pressure, builds trust',tag:'BUILDS TRUST',techniques:['Third-Party','Embedded Cmd','Label'],
+    textMsg:['Hi '+fn+' —',tpS,'The '+v+' is available'+stockRef+'.'+promoLine,col==='Blue'?'Would that approach be helpful?':'This week or next?',sig].join(' '),
+    emailSubject:v+' — What One Customer in Your Situation Did, '+fn,
+    emailMsg:['Hi '+fn+',',nn,tpS,tLine?nn+tLine:'',nn,'The '+v+' is available'+stockRef+'.'+promoLine+nn,col==='Blue'?'Would it help to see the complete numbers before committing to a visit?':'This week or next?',nn,sigE].join('')});
+
+  // ── PATH E: Short + Direct ────────────────────────────────
+  paths.push({label:'Path E — Short + Direct',path:'Minimum words, maximum signal — for Driver moments or time-sensitive leads',tag:'EFFICIENT',techniques:['Embedded Cmd','Double Bind'],
+    textMsg:[fn+' —',hasCS?'Email only, got it.':'',v+' is available'+stockRef+'.'+promoLine,hasBG?'Full out-the-door number incoming.':'','This week or next? '+sig].filter(Boolean).join(' '),
+    emailSubject:v+' Available — '+fn,
+    emailMsg:[fn+',',nn,hasCS?'Email it is.'+nn:'','The '+v+' is available'+stockRef+'.'+promoLine,hasBG?nn+'Full out-the-door breakdown below — no surprises.':'',tLine?nn+tLine:'',nn,'This week or next?',nn,sigE].join('')});
+
+  // ── PATH F: No-Oriented Question ─────────────────────────
+  var noQ=hasBG?'Would it be a terrible idea to see the full out-the-door number in writing before making any decisions?'
+    :col==='Blue'?'Would it be a terrible idea to at least get the numbers in writing before deciding anything?'
+    :'Would it be a terrible idea to lock in 20 minutes and see this in person?';
+  paths.push({label:'Path F — No-Oriented Question',path:'Designed to get a no that actually means yes — lowest resistance entry',tag:'LOW RESISTANCE',techniques:['No-Oriented Q','Guardian-Specific','Label'],
+    textMsg:['Hi '+fn+' —',noQ,tLine,sig].filter(Boolean).join(' '),
+    emailSubject:'Quick Question on the '+v+', '+fn,
+    emailMsg:['Hi '+fn+',',nn,noQ,nn,col==='Blue'?'No obligation, no pressure, no credit pull needed. Just the numbers in writing.':'The '+v+' is here and I can have everything ready when you are.',tLine?nn+tLine:'',nn,sigE].join('')});
+
+  return paths;
+}
+
+
 // ── MAIN RUN ──────────────────────────────────────────────────
 function runAnalysis(){
   var name=document.getElementById('in-name').value.trim();
@@ -703,7 +842,8 @@ function runAnalysis(){
   var sensory=detectSensory(LEAD);
   var sr=calcScore(LEAD);
   var tmpl=buildTemplates(LEAD,mbs,trans,sensory,suffering,voss);
-  RESULT={templates:tmpl,mbs:mbs,transplant:trans,score:sr.score,reasons:sr.reasons,suffering:suffering,voss:voss,sensory:sensory};
+  var paths=buildMultiPaths(LEAD,mbs,trans,sensory,suffering,voss);
+  RESULT={templates:tmpl,paths:paths,mbs:mbs,transplant:trans,score:sr.score,reasons:sr.reasons,suffering:suffering,voss:voss,sensory:sensory};
   document.getElementById('screen-input').style.display='none';
   document.getElementById('screen-results').style.display='block';
   renderLeft();
@@ -837,17 +977,59 @@ function renderRC(tab){
   var el=document.getElementById('rc');
   var backBtn='<button class="new-btn" onclick="backToInput()">\u2190 New Analysis</button>';
   if(tab==='text'){
-    el.innerHTML=backBtn+'<div class="sec-title">Text / SMS Responses</div>'+T.texts.map(function(o,i){return mo(o,'t'+i,selT,function(k){selT=k;renderRC('text');});}).join('');
+    // Use multi-paths if available, fall back to templates
+    var textOpts=RESULT.paths?RESULT.paths.map(function(p){return{label:p.label,tag:p.tag,hughes:p.techniques,msg:p.textMsg};}):(T.texts||[]);
+    el.innerHTML=backBtn+'<div class="sec-title">Text / SMS — 6 Strategic Paths</div>'+textOpts.map(function(o,i){return mo(o,'t'+i,selT,function(k){selT=k;renderRC('text');});}).join('');
   } else if(tab==='email'){
-    el.innerHTML=backBtn+'<div class="sec-title">Email Responses</div>'+T.emails.map(function(o,i){return mo(o,'e'+i,selE,function(k){selE=k;renderRC('email');});}).join('');
+    var emailOpts=RESULT.paths?RESULT.paths.map(function(p){return{label:p.label,tag:p.tag,hughes:p.techniques,subject:p.emailSubject,msg:p.emailMsg};}):(T.emails||[]);
+    el.innerHTML=backBtn+'<div class="sec-title">Email — 6 Strategic Paths</div>'+emailOpts.map(function(o,i){return mo(o,'e'+i,selE,function(k){selE=k;renderRC('email');});}).join('');
   } else {
     var rep=T.followups;
-    var ftabs='<div class="fu-tabs"><button class="futab '+(fuMode==='replied'?'on':'')+'" onclick="setFU(\'replied\')">\uD83D\uDCAC Replied</button><button class="futab '+(fuMode==='noReply'?'on':'')+'" onclick="setFU(\'noReply\')">\u23F0 No Response</button></div>';
     var crmBlock='<div class="crm-block"><div class="crm-label">CRM Note</div><div class="crm-line">'+rep.crmNote+'</div></div>';
-    if(fuMode==='replied'){
-      el.innerHTML=backBtn+ftabs+'<div class="rep-bubble"><div class="rep-lbl">Customer Replied</div><div class="rep-txt">&ldquo;'+rep.repliedScenario+'&rdquo;</div></div><div class="sub-sec">Text Follow-Ups</div>'+rep.repliedTexts.map(function(o,i){return mo(o,'frt'+i,selFT,function(k){selFT=k;renderRC('followup');});}).join('')+'<div class="sub-sec">Email Follow-Ups</div>'+rep.repliedEmails.map(function(o,i){return mo(o,'fre'+i,selFE,function(k){selFE=k;renderRC('followup');});}).join('')+crmBlock;
+
+    // Detect if customer has actually responded from comms history or notes
+    var hasRealReply = false;
+    var realReplyText = '';
+    var commsHistory = LEAD.commsHistory || [];
+    // Check comms history for a Responded or Contacted outcome
+    for(var ci=0;ci<commsHistory.length;ci++){
+      if(commsHistory[ci].outcome==='Responded'||commsHistory[ci].outcome==='Contacted'){
+        hasRealReply = true;
+        realReplyText = commsHistory[ci].comment || commsHistory[ci].type || '';
+        break;
+      }
+    }
+    // Also check customer message field
+    if(!hasRealReply && LEAD.customerMsg && LEAD.customerMsg.length > 5) {
+      hasRealReply = true;
+      realReplyText = LEAD.customerMsg;
+    }
+    // Check notes for response signals
+    if(!hasRealReply){
+      var notesL=(LEAD.notes||'').toLowerCase();
+      if(notesL.includes('responded')||notesL.includes('replied')||notesL.includes('customer said')||notesL.includes('customer wrote')){
+        hasRealReply = true;
+      }
+    }
+
+    // Default to no-reply tab if no real response detected
+    if(fuMode==='replied' && !hasRealReply) fuMode='noReply';
+
+    // Build tabs — only show Replied tab if there is an actual response
+    var rBtn=hasRealReply?'<button class="futab '+(fuMode==="replied"?"on":"")
+      +'" onclick="setFU(String.fromCharCode(114,101,112,108,105,101,100))">&#x1F4AC; Replied</button>':'';
+    var nBtn='<button class="futab '+(fuMode==="noReply"?"on":"")
+      +'" onclick="setFU(String.fromCharCode(110,111,82,101,112,108,121))">&#x23F0; No Response</button>';
+    var ftabs='<div class="fu-tabs">'+rBtn+nBtn+'</div>';
+
+    if(fuMode==='replied' && hasRealReply){
+      // Show real reply content
+      var replyDisplay = realReplyText.length > 5
+        ? '<div class="rep-bubble"><div class="rep-lbl">Customer Response Detected</div><div class="rep-txt">&ldquo;'+realReplyText.slice(0,200)+'&rdquo;</div></div>'
+        : '<div class="rep-bubble"><div class="rep-lbl">Response Recorded</div><div class="rep-txt">Customer has been reached — use follow-ups below.</div></div>';
+      el.innerHTML=backBtn+ftabs+replyDisplay+'<div class="sub-sec">Text Follow-Ups</div>'+rep.repliedTexts.map(function(o,i){return mo(o,'frt'+i,selFT,function(k){selFT=k;renderRC('followup');});}).join('')+'<div class="sub-sec">Email Follow-Ups</div>'+rep.repliedEmails.map(function(o,i){return mo(o,'fre'+i,selFE,function(k){selFE=k;renderRC('followup');});}).join('')+crmBlock;
     } else {
-      el.innerHTML=backBtn+ftabs+'<div class="rep-bubble" style="border-left-color:#64748B"><div class="rep-lbl" style="color:#64748B">No Response \u2014 '+rep.noReplyDay+'</div></div><div class="sub-sec">Text Follow-Ups</div>'+rep.noReplyTexts.map(function(o,i){return mo(o,'fnt'+i,selFT,function(k){selFT=k;renderRC('followup');});}).join('')+'<div class="sub-sec">Email Follow-Ups</div>'+rep.noReplyEmails.map(function(o,i){return mo(o,'fne'+i,selFE,function(k){selFE=k;renderRC('followup');});}).join('')+crmBlock;
+      el.innerHTML=backBtn+ftabs+'<div class="rep-bubble" style="border-left-color:#64748B"><div class="rep-lbl" style="color:#64748B">No Response — '+rep.noReplyDay+'</div><div class="rep-txt" style="font-size:10px;color:#475569;">No response detected in comms history. Use day-appropriate follow-up below.</div></div><div class="sub-sec">Text Follow-Ups</div>'+rep.noReplyTexts.map(function(o,i){return mo(o,'fnt'+i,selFT,function(k){selFT=k;renderRC('followup');});}).join('')+'<div class="sub-sec">Email Follow-Ups</div>'+rep.noReplyEmails.map(function(o,i){return mo(o,'fne'+i,selFE,function(k){selFE=k;renderRC('followup');});}).join('')+crmBlock;
     }
   }
 }
@@ -858,6 +1040,7 @@ function mo(o,key,activeKey,onClick){
   var on=activeKey===key;
   var safeMsg=o.msg.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
   _msgStore[key]=o.msg;
+  var pathDesc=o.path?'<div style="font-size:9px;color:#475569;margin-top:2px;line-height:1.3;">'+o.path+'</div>':'';
   return'<div class="mopt" style="background:'+(on?'#111827':'var(--bg2)')+';border:'+(on?'2px solid '+tc:'1px solid var(--bdr)')+';" onclick="('+onClick.toString()+')(\''+key+'\')"><div class="mopt-hdr"><div class="mopt-left"><div class="opt-radio" style="border-color:'+(on?tc:'var(--bdr2)')+'">'+(on?'<div class="opt-dot" style="background:'+tc+'"></div>':'')+'</div><div><div class="opt-lbl">'+o.label+'</div><div class="opt-tags">'+(o.hughes||[]).map(function(h){return'<span class="htag" style="background:'+(HC[h]||'#64748B')+'22;color:'+(HC[h]||'#64748B')+'">'+h+'</span>';}).join('')+'</div></div></div><span class="ttag" style="background:'+tc+'1A;color:'+tc+'">'+o.tag+'</span></div>'+(on?'<div class="mopt-body">'+(o.subject?'<div class="m-subject">Subject: <span>'+o.subject+'</span></div>':'')+'<div class="m-bubble"><pre>'+safeMsg+'</pre></div><button class="copy-btn" id="cb-'+key+'" onclick="event.stopPropagation();doCopy(\''+key+'\')">Copy</button></div>':'')+'</div>';
 }
 
